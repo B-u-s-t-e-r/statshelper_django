@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}StatsHelper{% endblock %}</title>
+    <!-- Bootstrap 5 — no install needed, loads from CDN -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body  { background: #f8f9fa; }
+        .navbar-brand { font-weight: 700; letter-spacing: 1px; }
+        .card { border: none; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
+    </style>
+</head>
+<body>
+
+  <!-- Navigation bar -->
+  <nav class="navbar navbar-expand-lg navbar-dark bg-dark mb-4">
+    <div class="container">
+      <a class="navbar-brand" href="{% url 'home' %}">📊 StatsHelper</a>
+      <div class="collapse navbar-collapse">
+        <ul class="navbar-nav ms-auto">
+          <li class="nav-item">
+            <a class="nav-link" href="{% url 'home' %}">Home</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="{% url 'concepts_list' %}">Browse Concepts</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="{% url 'ask' %}">Ask a Question</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="{% url 'recent_questions' %}">Recent</a>
+          </li>
+        </ul>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Page content goes here -->
+  <div class="container">
+    {% block content %}{% endblock %}
+  </div>
+
+  <footer class="text-center text-muted mt-5 mb-3">
+    <small>StatsHelper — Your statistics learning companion</small>
+  </footer>
+
+</body>
+</html>

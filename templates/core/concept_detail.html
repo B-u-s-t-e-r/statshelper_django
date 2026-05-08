@@ -1,0 +1,42 @@
+{% extends "core/base.html" %}
+
+{% block title %}{{ concept.title }} — StatsHelper{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-lg-8">
+
+    <!-- Breadcrumb -->
+    <nav aria-label="breadcrumb" class="mb-3">
+      <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{% url 'home' %}">Home</a></li>
+        <li class="breadcrumb-item"><a href="{% url 'concepts_list' %}">Concepts</a></li>
+        <li class="breadcrumb-item active">{{ concept.title }}</li>
+      </ol>
+    </nav>
+
+    <div class="card p-4">
+      <div class="d-flex justify-content-between align-items-center mb-3">
+        <h2 class="mb-0">{{ concept.title }}</h2>
+        {% if concept.level == 'beginner' %}
+          <span class="badge bg-success fs-6">Beginner</span>
+        {% elif concept.level == 'intermediate' %}
+          <span class="badge bg-warning text-dark fs-6">Intermediate</span>
+        {% else %}
+          <span class="badge bg-danger fs-6">Advanced</span>
+        {% endif %}
+      </div>
+
+      <hr>
+      <p class="lead">{{ concept.short_description }}</p>
+      <small class="text-muted">Added on {{ concept.created_at|date:"F j, Y" }}</small>
+    </div>
+
+    <div class="mt-4 d-flex gap-2">
+      <a href="{% url 'concepts_list' %}" class="btn btn-outline-secondary">← Back to Concepts</a>
+      <a href="{% url 'ask' %}" class="btn btn-dark">Ask a Question About This →</a>
+    </div>
+
+  </div>
+</div>
+{% endblock %}

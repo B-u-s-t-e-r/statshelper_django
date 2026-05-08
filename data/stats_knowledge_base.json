@@ -1,0 +1,1455 @@
+[
+  {
+    "id": "t_test_independent",
+    "concept": "Independent Samples t-Test",
+    "category": "Hypothesis Testing",
+    "keywords": [
+      "compare two groups", "mean difference", "two independent groups",
+      "t-test", "two sample", "group comparison", "average difference between groups",
+      "two groups normal", "equal variance two groups", "compare means",
+      "compare average", "compare scores", "two different groups",
+      "two methods", "teaching methods", "exam scores compare",
+      "which group is better", "group difference", "compare performance"
+    ],
+    "when_to_use": "Use when comparing the means of two independent groups where data is normally distributed and variances are roughly equal.",
+    "intuition": "Imagine you run two separate classrooms with different teaching methods. You want to know if one method genuinely produces better scores or if the difference is just random luck. The t-test works like a signal-to-noise ratio: it measures how far apart the two group averages are (the signal) relative to how much natural variation exists within each group (the noise). If the signal is much larger than the noise, you conclude the difference is real.",
+    "formula": {
+      "expression": "$t = \\dfrac{\\bar{X}_1 - \\bar{X}_2}{\\sqrt{\\dfrac{s_1^2}{n_1} + \\dfrac{s_2^2}{n_2}}}$",
+      "legend": {
+        "\\bar{X}_1, \\bar{X}_2": "Sample means of group 1 and group 2",
+        "s_1^2, s_2^2": "Sample variances of group 1 and group 2",
+        "n_1, n_2": "Sample sizes of group 1 and group 2",
+        "t": "t-statistic compared to critical value from t-distribution"
+      }
+    },
+    "real_world_example": "A pharmaceutical company tests a new painkiller. Group A (50 patients) takes the new drug and Group B (50 patients) takes a placebo. They measure pain score reduction. The t-test tells them whether the drug's average pain reduction is genuinely better than placebo or just sampling noise.",
+    "why": "The independent t-test assesses whether the population means of two unrelated groups differ. It uses the t-distribution to account for uncertainty in estimating population variance from sample data.",
+    "assumptions": [
+      "Independence: Observations within and between groups are independent.",
+      "Normality: Data in each group is approximately normally distributed (or n > 30 by CLT).",
+      "Homogeneity of Variance: Both groups have roughly equal variances. Run Levene's test first. If violated use Welch's t-test.",
+      "Continuous Data: The dependent variable is measured on a continuous scale.",
+      "Random Sampling: Data is collected via random sampling."
+    ],
+    "mini_example": {
+      "scenario": "Comparing exam scores between two teaching methods.",
+      "code": "from scipy import stats\nimport numpy as np\n\nnew_method  = np.array([80,75,82,78,76,79,83,77,81,74,78,80,76,79,82,75,77,81,78,80,74,79,76,83,77,80,75,78,81,79])\ntraditional = np.array([70,73,68,72,75,71,69,74,73,70,72,71,73,68,74,70,72,73,71,69,74,70,73,72,71,69,74,72,70,73])\n\n# Check variance equality first\n_, p_levene = stats.levene(new_method, traditional)\nprint(f'Levene p-value: {p_levene:.4f} \u2014 {\"equal variances OK\" if p_levene > 0.05 else \"use Welch!\"}')\n\nt_stat, p_value = stats.ttest_ind(new_method, traditional)\nprint(f'T-statistic: {t_stat:.4f}, P-value: {p_value:.4f}')\nif p_value < 0.05:\n    print('Significant difference exists.')",
+      "interpretation": "If p < 0.05 we conclude the new teaching method significantly improves exam scores."
+    },
+    "common_mistakes": [
+      "Not running Levene's test first to check variance equality \u2014 if variances differ use Welch's t-test.",
+      "Using paired t-test when groups are independent and vice versa.",
+      "Ignoring normality for small samples (n < 30) \u2014 use Mann-Whitney instead.",
+      "Confusing statistical significance with practical significance.",
+      "Using t-test for ordinal or categorical data."
+    ],
+    "effect_size": "Cohen's d = (mean1 - mean2) / pooled_std. Small=0.2, Medium=0.5, Large=0.8"
+  },
+  {
+    "id": "welch_t_test",
+    "concept": "Welch's t-Test",
+    "category": "Hypothesis Testing",
+    "keywords": [
+      "unequal variances",
+      "different variances",
+      "variance assumption violated",
+      "heteroscedasticity",
+      "levene test failed",
+      "two groups unequal variance",
+      "unequal spread",
+      "very different variances",
+      "what should I do variances differ",
+      "variance problem two groups",
+      "groups have different variances"
+    ],
+    "when_to_use": "Use instead of the independent t-test when two groups have significantly different variances (confirmed by Levene's test p < 0.05).",
+    "intuition": "The standard t-test assumes both groups have similar spread. When one group is much more variable than the other, the standard formula underestimates uncertainty and produces unreliable p-values. Welch's version adjusts the degrees of freedom downward to compensate \u2014 making it more conservative and honest about the actual uncertainty in your data. In practice it is one argument change in Python.",
+    "formula": {
+      "expression": "$t = \\dfrac{\\bar{X}_1 - \\bar{X}_2}{\\sqrt{\\dfrac{s_1^2}{n_1} + \\dfrac{s_2^2}{n_2}}}$, $\\quad df = \\dfrac{\\left(\\frac{s_1^2}{n_1}+\\frac{s_2^2}{n_2}\\right)^2}{\\frac{(s_1^2/n_1)^2}{n_1-1}+\\frac{(s_2^2/n_2)^2}{n_2-1}}$",
+      "legend": {
+        "\\bar{X}_1, \\bar{X}_2": "Sample means of group 1 and group 2",
+        "s_1^2, s_2^2": "Sample variances \u2014 allowed to be very different",
+        "df": "Welch-Satterthwaite degrees of freedom \u2014 adjusted downward when variances differ"
+      }
+    },
+    "real_world_example": "A startup compares app session durations between free users (highly variable \u2014 1 min to 2 hrs) and premium users (consistently 20-40 min). Levene's test confirms unequal variances. Welch's t-test is used to correctly assess whether premium users genuinely spend more time.",
+    "why": "When variance homogeneity is violated the standard t-test's degrees of freedom are inflated making p-values too small and increasing false positives. Welch's adjustment corrects this by computing degrees of freedom from the actual variance ratio.",
+    "assumptions": [
+      "Two independent groups.",
+      "Data is approximately normally distributed in each group (or n > 30).",
+      "Does NOT require equal variances \u2014 this is the entire point of using it.",
+      "Random sampling."
+    ],
+    "mini_example": {
+      "scenario": "Two groups confirmed to have very different variances by Levene's test.",
+      "code": "from scipy import stats\nimport numpy as np\n\ngroup_a = np.array([20, 21, 19, 20, 22, 21, 20, 19, 21, 20])  # low variance\ngroup_b = np.array([10, 35,  5, 40,  8, 45, 12, 38,  7, 42])  # high variance\n\nprint(f'Variance A: {np.var(group_a, ddof=1):.2f}')\nprint(f'Variance B: {np.var(group_b, ddof=1):.2f}')\n\n_, p_levene = stats.levene(group_a, group_b)\nprint(f'Levene p-value: {p_levene:.4f} \u2014 unequal variances confirmed')\n\n# equal_var=False is the only change needed\nt_stat, p_value = stats.ttest_ind(group_a, group_b, equal_var=False)\nprint(f'Welch T-statistic: {t_stat:.4f}')\nprint(f'P-value: {p_value:.4f}')",
+      "interpretation": "Setting equal_var=False in scipy automatically applies Welch's correction. One argument change from the standard t-test."
+    },
+    "common_mistakes": [
+      "Running standard t-test without checking Levene's test first.",
+      "Assuming equal variances just because sample sizes are similar.",
+      "Not knowing that equal_var=False in scipy.stats.ttest_ind gives Welch's test automatically.",
+      "Using Welch's when variances ARE equal \u2014 standard t-test has slightly more power in that case."
+    ],
+    "effect_size": "Cohen's d = (mean1 - mean2) / pooled_std. Same interpretation as standard t-test."
+  },
+  {
+    "id": "t_test_paired",
+    "concept": "Paired Samples t-Test",
+    "category": "Hypothesis Testing",
+    "keywords": [
+      "before after",
+      "pre post",
+      "same subjects",
+      "repeated measures",
+      "paired",
+      "within subject",
+      "same participants measured twice",
+      "pre and post",
+      "treatment effect same person",
+      "before and after normal"
+    ],
+    "when_to_use": "Use when comparing two measurements from the same subjects where the differences are normally distributed.",
+    "intuition": "Suppose you measure each patient's blood pressure before and after a drug. Instead of treating these as two separate groups you focus purely on each person's individual change. By doing this you cancel out differences between people \u2014 a naturally high-BP person's before and after are compared only to themselves. You are essentially running a one-sample t-test on the differences. This makes the test more sensitive because personal variation is removed.",
+    "formula": {
+      "expression": "$t = \\dfrac{\\bar{d}}{s_d / \\sqrt{n}}$",
+      "legend": {
+        "\\bar{d}": "Mean of the pairwise differences (before minus after)",
+        "s_d": "Standard deviation of the differences",
+        "n": "Number of pairs",
+        "t": "t-statistic tested against t-distribution with n-1 degrees of freedom"
+      }
+    },
+    "real_world_example": "A fitness app measures users' resting heart rate before and after a 30-day workout program. The paired t-test checks whether the program caused a real reduction in heart rate using each user as their own control.",
+    "why": "Because the two measurements are correlated (same subject) the paired t-test controls for individual differences giving more statistical power than the independent t-test.",
+    "assumptions": [
+      "The differences between paired observations are normally distributed.",
+      "Pairs are independent of each other.",
+      "Continuous measurement scale.",
+      "No significant outliers in the differences. If violated use Wilcoxon Signed-Rank test."
+    ],
+    "mini_example": {
+      "scenario": "Blood pressure measured before and after a drug treatment on 10 patients.",
+      "code": "from scipy import stats\nimport numpy as np\n\nbefore = np.array([120, 130, 125, 128, 135, 122, 118, 132, 127, 124])\nafter  = np.array([115, 122, 118, 120, 128, 116, 112, 125, 120, 118])\n\ndiff = before - after\nprint(f'Mean reduction: {diff.mean():.2f} mmHg')\n\n# Check normality of differences\n_, p_norm = stats.shapiro(diff)\nprint(f'Shapiro p-value: {p_norm:.4f} \u2014 {\"normal OK\" if p_norm > 0.05 else \"use Wilcoxon!\"}')\n\nt_stat, p_value = stats.ttest_rel(before, after)\nprint(f'T-statistic: {t_stat:.4f}, P-value: {p_value:.4f}')\nif p_value < 0.05:\n    print('Drug significantly reduces blood pressure.')",
+      "interpretation": "A significant p-value means the treatment had a real effect on the same patients."
+    },
+    "common_mistakes": [
+      "Using independent t-test when data is paired \u2014 loses statistical power.",
+      "Forgetting to check normality of DIFFERENCES not the raw values.",
+      "If differences are not normal use Wilcoxon Signed-Rank test instead.",
+      "Mixing up direction of difference (before-after vs after-before)."
+    ],
+    "effect_size": "Cohen's d = mean_difference / std_difference"
+  },
+  {
+    "id": "wilcoxon_signed_rank",
+    "concept": "Wilcoxon Signed-Rank Test",
+    "category": "Non-Parametric Tests",
+    "keywords": [
+      "before after not normal",
+      "paired not normal",
+      "non parametric paired",
+      "pre post skewed",
+      "same subjects non normal",
+      "repeated measures not normal",
+      "before after outliers",
+      "within subject non parametric",
+      "paired non parametric alternative",
+      "differences not normal"
+    ],
+    "when_to_use": "Use as the non-parametric alternative to the paired t-test when the differences between paired observations are not normally distributed or contain outliers.",
+    "intuition": "Just like the paired t-test you are comparing two measurements from the same person. But instead of using the actual difference values you rank them by their absolute size and then check whether the positive differences tend to be larger in rank than the negative differences. By using ranks instead of raw values a single extreme outlier cannot dominate the result.",
+    "formula": {
+      "expression": "$W = \\sum_{i=1}^{n} [\\text{sgn}(x_{2i} - x_{1i}) \\cdot R_i]$",
+      "legend": {
+        "W": "Wilcoxon test statistic \u2014 sum of signed ranks",
+        "R_i": "Rank of the absolute difference for pair i",
+        "\\text{sgn}": "Sign function: +1 if after > before, -1 if after < before",
+        "n": "Number of pairs with non-zero difference"
+      }
+    },
+    "real_world_example": "A hospital tests a pain relief cream on 15 patients measuring pain score (1-10) before and after. Two patients report extreme outlier scores making differences non-normal. Wilcoxon Signed-Rank test is used instead of paired t-test to safely handle the outliers.",
+    "why": "When paired differences violate normality the paired t-test's p-values become unreliable. Wilcoxon uses ranks making it robust to outliers and skewed distributions while still accounting for the paired structure.",
+    "assumptions": [
+      "Two related measurements from the same subjects (paired data).",
+      "The differences can be ranked (ordinal or continuous scale).",
+      "Pairs are independent of each other.",
+      "No assumption of normality required."
+    ],
+    "mini_example": {
+      "scenario": "Pain scores before and after treatment \u2014 differences are skewed with outliers.",
+      "code": "from scipy import stats\nimport numpy as np\n\nbefore = np.array([8, 7, 9, 6, 8, 7, 9, 5, 8, 7, 6, 9, 8, 7, 10])\nafter  = np.array([5, 6, 4, 5, 3, 6, 2, 4, 1, 5, 5, 3, 4, 6,  2])\n\ndiff = before - after\nprint(f'Mean reduction: {diff.mean():.2f}')\n\n# Confirm non-normality of differences\n_, p_norm = stats.shapiro(diff)\nprint(f'Shapiro p-value: {p_norm:.4f} \u2014 use Wilcoxon since not normal')\n\nstat, p_value = stats.wilcoxon(before, after)\nprint(f'Wilcoxon statistic: {stat:.4f}')\nprint(f'P-value: {p_value:.4f}')\nif p_value < 0.05:\n    print('Treatment significantly reduces pain.')",
+      "interpretation": "Significant p-value means the treatment had a real effect even accounting for non-normal differences."
+    },
+    "common_mistakes": [
+      "Using paired t-test when differences are clearly skewed or have outliers.",
+      "Confusing Wilcoxon Signed-Rank (paired) with Mann-Whitney (independent groups).",
+      "Using when data is truly nominal \u2014 Wilcoxon needs at least ordinal scale.",
+      "Ignoring the paired structure and using Mann-Whitney instead."
+    ],
+    "effect_size": "r = Z / sqrt(N). Small=0.1, Medium=0.3, Large=0.5"
+  },
+  {
+    "id": "one_way_anova",
+    "concept": "One-Way ANOVA",
+    "category": "Hypothesis Testing",
+    "keywords": [
+      "three or more groups",
+      "compare multiple groups",
+      "multiple means",
+      "anova",
+      "analysis of variance",
+      "f-test",
+      "several groups",
+      "3 groups normal",
+      "multiple groups continuous",
+      "compare three groups"
+    ],
+    "when_to_use": "Use when comparing the means of 3 or more independent groups where data is normally distributed with equal variances.",
+    "intuition": "Think of ANOVA as asking: are the groups more different from each other than individuals within the same group are from each other? It compares two sources of variation \u2014 variation between groups and variation within groups. If between-group variation is much larger than within-group variation something real is happening. Running multiple t-tests instead would inflate your false positive rate \u2014 the more tests you run the more likely you find a spurious result by chance.",
+    "formula": {
+      "expression": "$F = \\dfrac{MS_{between}}{MS_{within}} = \\dfrac{SS_{between}/(k-1)}{SS_{within}/(N-k)}$",
+      "legend": {
+        "MS_{between}": "Mean square between groups \u2014 variance explained by group membership",
+        "MS_{within}": "Mean square within groups \u2014 variance due to individual differences",
+        "k": "Number of groups",
+        "N": "Total number of observations",
+        "F": "F-statistic \u2014 if much greater than 1 between-group differences dominate"
+      }
+    },
+    "real_world_example": "An e-commerce company runs an A/B/C test on three versions of a checkout page measuring conversion rate across 3000 users. One-Way ANOVA tells them if at least one version performs differently. If significant Tukey post-hoc test reveals which specific versions differ.",
+    "why": "Running multiple t-tests inflates Type I error. ANOVA tests all groups simultaneously using the F-ratio (between-group variance divided by within-group variance).",
+    "assumptions": [
+      "Independence: Observations are independent within and across groups.",
+      "Normality: Data in each group is approximately normally distributed.",
+      "Homogeneity of Variance: All groups have similar variances (check with Levene's test).",
+      "Continuous dependent variable.",
+      "If normality or equal variance is violated use Kruskal-Wallis test instead."
+    ],
+    "mini_example": {
+      "scenario": "Compare crop yield across 3 different fertilizer types.",
+      "code": "from scipy import stats\nimport numpy as np\n\nfertilizer_A = np.array([20, 22, 19, 24, 21])\nfertilizer_B = np.array([28, 30, 27, 29, 31])\nfertilizer_C = np.array([18, 17, 19, 20, 18])\n\n# Check assumptions first\n_, p_levene = stats.levene(fertilizer_A, fertilizer_B, fertilizer_C)\nprint(f'Levene p-value: {p_levene:.4f}')\n\nf_stat, p_value = stats.f_oneway(fertilizer_A, fertilizer_B, fertilizer_C)\nprint(f'F-statistic: {f_stat:.4f}, P-value: {p_value:.4f}')\nif p_value < 0.05:\n    print('Significant difference exists. Run post-hoc test.')",
+      "interpretation": "F-test tells you at least one group differs. Tukey post-hoc tells you WHICH groups differ."
+    },
+    "common_mistakes": [
+      "Running multiple t-tests instead of ANOVA \u2014 inflates false positive rate.",
+      "Not running post-hoc test after significant ANOVA \u2014 you only know someone differs not who.",
+      "Ignoring variance homogeneity \u2014 use Kruskal-Wallis if violated.",
+      "Forgetting that significant ANOVA does not tell you WHERE the difference is."
+    ],
+    "effect_size": "Eta-squared (\u03b7\u00b2) = SS_between / SS_total. Small=0.01, Medium=0.06, Large=0.14"
+  },
+  {
+    "id": "kruskal_wallis",
+    "concept": "Kruskal-Wallis Test",
+    "category": "Non-Parametric Tests",
+    "keywords": [
+      "three groups not normal",
+      "multiple groups non parametric",
+      "anova not normal",
+      "non parametric anova",
+      "three groups skewed",
+      "compare groups ordinal",
+      "multiple groups non normal",
+      "kruskal",
+      "anova assumption violated",
+      "3 groups ordinal",
+      "several groups not normal",
+      "groups with outliers compare"
+    ],
+    "when_to_use": "Use as the non-parametric alternative to One-Way ANOVA when data is not normally distributed, ordinal, or contains significant outliers across 3 or more groups.",
+    "intuition": "Kruskal-Wallis does for multiple groups what Mann-Whitney does for two groups \u2014 it converts all values across all groups into ranks and then checks whether the rank distributions differ between groups. It does not care about the shape of your data distribution. Think of it as asking: do the groups tend to occupy different positions in the overall ranking?",
+    "formula": {
+      "expression": "$H = \\dfrac{12}{N(N+1)} \\sum_{i=1}^{k} \\dfrac{R_i^2}{n_i} - 3(N+1)$",
+      "legend": {
+        "H": "Kruskal-Wallis test statistic \u2014 compared to chi-square distribution",
+        "N": "Total number of observations across all groups",
+        "k": "Number of groups",
+        "R_i": "Sum of ranks in group i",
+        "n_i": "Sample size of group i"
+      }
+    },
+    "real_world_example": "A hospital compares patient recovery time (in days) across 4 treatment protocols. Recovery times are heavily skewed with outliers. Kruskal-Wallis is used instead of ANOVA to determine if at least one protocol leads to significantly different recovery times.",
+    "why": "When ANOVA assumptions of normality or equal variance are violated the F-statistic becomes unreliable. Kruskal-Wallis uses ranks making it valid regardless of distribution shape.",
+    "assumptions": [
+      "Three or more independent groups.",
+      "Ordinal or continuous dependent variable.",
+      "Observations are independent.",
+      "No assumption of normality required.",
+      "Groups should have similar distribution shapes if comparing medians."
+    ],
+    "mini_example": {
+      "scenario": "Compare satisfaction scores across 3 departments \u2014 data is skewed.",
+      "code": "from scipy import stats\nimport numpy as np\n\ndept_A = np.array([3, 4, 2, 5, 3, 4, 2, 3])\ndept_B = np.array([5, 5, 4, 5, 4, 5, 5, 4])\ndept_C = np.array([2, 1, 3, 2, 1, 2, 3, 1])\n\nstat, p_value = stats.kruskal(dept_A, dept_B, dept_C)\nprint(f'Kruskal-Wallis H: {stat:.4f}')\nprint(f'P-value: {p_value:.4f}')\nif p_value < 0.05:\n    print('At least one department differs significantly.')\n    print('Run Dunn post-hoc test to find which pairs differ.')",
+      "interpretation": "Significant result means at least one group has a different rank distribution. Use Dunn test for pairwise comparisons."
+    },
+    "common_mistakes": [
+      "Using ANOVA when data is clearly non-normal especially with small samples.",
+      "Not running post-hoc test (Dunn's test) after significant result.",
+      "Confusing Kruskal-Wallis (3+ groups) with Mann-Whitney (2 groups only).",
+      "Interpreting Kruskal-Wallis as comparing medians \u2014 it compares rank distributions."
+    ],
+    "effect_size": "Eta-squared (\u03b7\u00b2) = (H - k + 1) / (N - k). Small=0.01, Medium=0.06, Large=0.14"
+  },
+  {
+    "id": "chi_square_test",
+    "concept": "Chi-Square Test of Independence",
+    "category": "Hypothesis Testing",
+    "keywords": [
+      "categorical",
+      "frequency",
+      "association",
+      "contingency table",
+      "proportion",
+      "count data",
+      "nominal",
+      "two categorical variables",
+      "survey",
+      "categorical association large sample",
+      "gender preference",
+      "category relationship",
+      "count association"
+    ],
+    "when_to_use": "Use when testing association between two categorical variables and all expected cell counts are 5 or more.",
+    "intuition": "Imagine you survey 500 people asking their gender and preferred social media platform. If gender and platform choice are truly independent the proportion of men vs women should be roughly the same across every platform. Chi-square compares what you actually observed to what you would expect if there were absolutely no relationship. The bigger the gap between observed and expected counts the more evidence of a real association.",
+    "formula": {
+      "expression": "$\\chi^2 = \\sum \\dfrac{(O_i - E_i)^2}{E_i}$",
+      "legend": {
+        "O_i": "Observed frequency in cell i",
+        "E_i": "Expected frequency in cell i = (row total x column total) / grand total",
+        "\\chi^2": "Chi-square statistic \u2014 larger values indicate stronger evidence against independence",
+        "df": "Degrees of freedom = (rows - 1) x (columns - 1)"
+      }
+    },
+    "real_world_example": "Netflix wants to know if viewing genre preference (Action/Drama/Comedy) depends on age group (18-30, 31-50, 50+). They pull user counts per cell and run chi-square. A significant result means age and genre are associated \u2014 useful for targeted content recommendations.",
+    "why": "The chi-square statistic measures how far observed counts deviate from expected counts under independence. Large deviation equals evidence of association.",
+    "assumptions": [
+      "Both variables are categorical (nominal or ordinal).",
+      "Observations are independent.",
+      "Expected frequency in each cell >= 5. If violated use Fisher's Exact Test.",
+      "Data is in counts/frequencies not proportions."
+    ],
+    "mini_example": {
+      "scenario": "Is there an association between gender and product preference?",
+      "code": "from scipy import stats\nimport numpy as np\n\nobserved = np.array([[30, 10, 20],\n                     [20, 25, 15]])\n\n# Check expected frequencies\nchi2, p_value, dof, expected = stats.chi2_contingency(observed)\nprint(f'Minimum expected count: {expected.min():.1f}')\nprint(f'Chi2: {chi2:.4f}, P-value: {p_value:.4f}, df: {dof}')\nif expected.min() < 5:\n    print('Warning: use Fishers Exact Test instead')\nelif p_value < 0.05:\n    print('Significant association found.')",
+      "interpretation": "Reject H0 if p < 0.05 meaning the two variables are NOT independent."
+    },
+    "common_mistakes": [
+      "Using chi-square when any expected cell count is below 5 \u2014 use Fisher's Exact Test.",
+      "Entering proportions instead of raw counts.",
+      "Confusing chi-square goodness-of-fit with chi-square independence test.",
+      "Interpreting association as causation."
+    ],
+    "effect_size": "Cramer's V = sqrt(chi2 / (n * min(rows-1, cols-1))). Range 0-1."
+  },
+  {
+    "id": "fisher_exact_test",
+    "concept": "Fisher's Exact Test",
+    "category": "Non-Parametric Tests",
+    "keywords": [
+      "small sample categorical", "small cell count", "expected count below 5",
+      "fisher", "2x2 table small", "rare event categorical",
+      "chi square assumption violated", "small sample association",
+      "contingency table small", "categorical small n",
+      "small sample size categorical", "small n association",
+      "categorical small sample", "few observations categorical",
+      "tiny sample categorical", "association small dataset",
+      "small data categorical", "limited sample categorical"
+    ],
+    "when_to_use": "Use instead of chi-square when you have categorical data but any expected cell count is below 5, or when sample size is small.",
+    "intuition": "Chi-square uses an approximation that breaks down with small samples. Fisher's Exact Test does not approximate \u2014 it calculates the exact probability of observing your table or a more extreme one by enumerating all possible tables with the same row and column totals. It is slower to compute but gives exact p-values regardless of sample size.",
+    "formula": {
+      "expression": "$p = \\dfrac{\\binom{a+b}{a}\\binom{c+d}{c}}{\\binom{n}{a+c}}= \\dfrac{(a+b)!(c+d)!(a+c)!(b+d)!}{a!\\, b!\\, c!\\, d!\\, n!}$",
+      "legend": {
+        "a, b, c, d": "Cell counts in the 2x2 contingency table",
+        "n": "Total sample size",
+        "p": "Exact probability of this table configuration under independence"
+      }
+    },
+    "real_world_example": "A rare disease study examines whether exposure to a chemical (yes/no) is associated with disease outcome (yes/no) in a sample of only 20 patients. Expected cell counts are below 5 so Fisher's Exact Test is used instead of chi-square.",
+    "why": "Chi-square relies on a large-sample approximation that produces inaccurate p-values when expected cell counts are small. Fisher's Exact Test computes the exact p-value making it valid for any sample size.",
+    "assumptions": [
+      "Two categorical variables forming a 2x2 contingency table.",
+      "Observations are independent.",
+      "Fixed marginal totals (row and column totals are treated as fixed).",
+      "Works for any sample size \u2014 especially useful when n is small."
+    ],
+    "mini_example": {
+      "scenario": "Small clinical trial \u2014 did treatment cure patients (yes/no)?",
+      "code": "from scipy import stats\nimport numpy as np\n\n# 2x2 table: rows=treatment/control, cols=cured/not cured\ntable = np.array([[8, 2],   # treatment: 8 cured, 2 not\n                  [3, 7]])  # control:   3 cured, 7 not\n\nprint('Expected counts under chi-square:')\n_, _, _, expected = stats.chi2_contingency(table)\nprint(expected)\nprint(f'Min expected: {expected.min():.1f} \u2014 below 5 so use Fisher')\n\nodds_ratio, p_value = stats.fisher_exact(table)\nprint(f'Odds Ratio: {odds_ratio:.4f}')\nprint(f'P-value: {p_value:.4f}')\nif p_value < 0.05:\n    print('Significant association between treatment and cure.')",
+      "interpretation": "The odds ratio tells you how many times more likely the outcome is in one group vs the other."
+    },
+    "common_mistakes": [
+      "Using chi-square when expected cell counts are below 5.",
+      "Applying Fisher's Exact Test to tables larger than 2x2 without proper software.",
+      "Confusing odds ratio from Fisher's with relative risk.",
+      "Using when observations are not independent."
+    ],
+    "effect_size": "Odds Ratio (OR). OR=1 means no association. OR>1 means higher odds in first group."
+  },
+  {
+    "id": "pearson_correlation",
+    "concept": "Pearson Correlation",
+    "category": "Correlation & Regression",
+    "keywords": [
+      "correlation",
+      "linear relationship",
+      "two continuous variables",
+      "scatter plot",
+      "association between continuous variables",
+      "correlation normal data",
+      "linear association",
+      "relationship continuous"
+    ],
+    "when_to_use": "Use to measure the strength and direction of the LINEAR relationship between two continuous normally distributed variables.",
+    "intuition": "Imagine plotting height vs weight for 1000 people. Pearson's r asks: when someone is taller than average do they also tend to be heavier? If yes consistently r is close to +1. If there is no pattern r is near 0. It only captures LINEAR relationships \u2014 a perfect U-shape would give r near 0 even though the relationship is strong. Always check a scatter plot first.",
+    "formula": {
+      "expression": "$r = \\dfrac{\\sum(X_i - \\bar{X})(Y_i - \\bar{Y})}{\\sqrt{\\sum(X_i-\\bar{X})^2 \\cdot \\sum(Y_i-\\bar{Y})^2}}$",
+      "legend": {
+        "X_i, Y_i": "Individual data points for variables X and Y",
+        "\\bar{X}, \\bar{Y}": "Sample means of X and Y",
+        "r": "Pearson correlation coefficient ranging from -1 to +1",
+        "r^2": "Proportion of shared variance between X and Y"
+      }
+    },
+    "real_world_example": "A real estate platform analyzes whether house size (sq ft) correlates with listing price across 10,000 properties. r = 0.87 tells them there is a strong positive linear relationship guiding their pricing algorithm.",
+    "why": "Pearson's r quantifies how much two variables move together linearly. It is the standard measure of linear association for continuous normally distributed data.",
+    "assumptions": [
+      "Both variables are continuous (interval or ratio scale).",
+      "Linear relationship between the two variables \u2014 check scatter plot.",
+      "Both variables are approximately normally distributed.",
+      "No significant outliers \u2014 outliers heavily distort r.",
+      "If data is ordinal or non-normal use Spearman correlation instead."
+    ],
+    "mini_example": {
+      "scenario": "Is there a correlation between hours studied and exam score?",
+      "code": "from scipy import stats\nimport numpy as np\n\nhours  = np.array([1, 2, 3, 4, 5, 6, 7, 8, 9, 10])\nscores = np.array([50, 55, 60, 65, 70, 72, 78, 82, 88, 92])\n\nr, p_value = stats.pearsonr(hours, scores)\nprint(f'Pearson r: {r:.4f}')\nprint(f'P-value: {p_value:.4f}')\nprint(f'R-squared: {r**2:.4f}')\n\nstrength = 'Strong' if abs(r) >= 0.7 else ('Moderate' if abs(r) >= 0.4 else 'Weak')\ndirection = 'positive' if r > 0 else 'negative'\nprint(f'{strength} {direction} linear correlation')",
+      "interpretation": "r=0.99 means hours studied and exam scores are strongly positively correlated linearly."
+    },
+    "common_mistakes": [
+      "Correlation does not imply causation.",
+      "Using Pearson for non-linear relationships \u2014 use Spearman instead.",
+      "Outliers can artificially inflate or deflate r.",
+      "Using Pearson for ordinal data \u2014 use Spearman rank correlation.",
+      "Not checking scatter plot for non-linearity before computing r."
+    ],
+    "effect_size": "r itself is the effect size. Small=0.1, Medium=0.3, Large=0.5"
+  },
+  {
+    "id": "spearman_correlation",
+    "concept": "Spearman Rank Correlation",
+    "category": "Correlation & Regression",
+    "keywords": [
+      "non linear correlation",
+      "ordinal correlation",
+      "rank correlation",
+      "correlation not normal",
+      "monotonic relationship",
+      "spearman",
+      "correlation with outliers",
+      "non parametric correlation",
+      "correlation ordinal data",
+      "ranked data relationship",
+      "correlation skewed",
+      "relationship not linear",
+      "non linear",
+      "not linear",
+      "ordinal",
+      "rank data",
+      "nonlinear correlation",
+      "correlation ordinal"
+    ],
+    "when_to_use": "Use instead of Pearson when data is ordinal, not normally distributed, has outliers, or the relationship is monotonic but not strictly linear.",
+    "intuition": "Spearman is Pearson applied to ranks instead of raw values. Instead of asking how much X and Y move together in absolute terms it asks: when X increases does Y consistently increase too (even if not in a straight line)? This is called a monotonic relationship. By converting to ranks outliers lose their extreme influence \u2014 the highest value becomes rank 1 regardless of how extreme it is.",
+    "formula": {
+      "expression": "$r_s = 1 - \\dfrac{6\\sum d_i^2}{n(n^2-1)}$",
+      "legend": {
+        "r_s": "Spearman rank correlation coefficient ranging from -1 to +1",
+        "d_i": "Difference between the ranks of corresponding values of X and Y",
+        "n": "Number of observations"
+      }
+    },
+    "real_world_example": "A recruitment firm wants to know if interview ranking (1st, 2nd, 3rd...) correlates with job performance rating after 6 months. Both variables are ordinal so Spearman correlation is used instead of Pearson.",
+    "why": "When normality or linearity assumptions are violated Pearson's r becomes misleading. Spearman uses ranks making it valid for ordinal data and robust to outliers.",
+    "assumptions": [
+      "Both variables are at least ordinal.",
+      "The relationship is monotonic (consistently increasing or decreasing, not necessarily linear).",
+      "Observations are independent.",
+      "No assumption of normality required."
+    ],
+    "mini_example": {
+      "scenario": "Correlation between customer satisfaction rank and repurchase frequency \u2014 ordinal data.",
+      "code": "from scipy import stats\nimport numpy as np\n\n# Ordinal satisfaction ranks and purchase counts\nsatisfaction = np.array([1, 2, 3, 4, 5, 6, 7, 8, 9, 10])\npurchases    = np.array([1, 1, 2, 3, 3, 5, 5, 7, 8, 10])\n\n# Spearman for ordinal/non-normal data\nrho, p_value = stats.spearmanr(satisfaction, purchases)\nprint(f'Spearman rho: {rho:.4f}')\nprint(f'P-value: {p_value:.4f}')\n\n# Compare with Pearson\nr, _ = stats.pearsonr(satisfaction, purchases)\nprint(f'Pearson r (for comparison): {r:.4f}')",
+      "interpretation": "rho near +1 means higher satisfaction rank consistently leads to more purchases even if not perfectly linear."
+    },
+    "common_mistakes": [
+      "Using Pearson when data is ordinal or clearly non-normal.",
+      "Assuming Spearman detects all relationships \u2014 it misses non-monotonic ones (e.g. U-shapes).",
+      "Confusing Spearman with Kendall's tau \u2014 both are rank correlations but differ in interpretation.",
+      "Using Spearman when Pearson assumptions ARE met \u2014 Pearson has slightly more power then."
+    ],
+    "effect_size": "rho itself is the effect size. Same interpretation as Pearson r."
+  },
+  {
+    "id": "linear_regression",
+    "concept": "Simple Linear Regression",
+    "category": "Correlation & Regression",
+    "keywords": [
+      "predict", "prediction", "forecast", "dependent variable",
+      "independent variable", "regression", "line of best fit",
+      "continuous outcome one predictor", "predict continuous one variable",
+      "estimate outcome", "one predictor continuous",
+      "predict from one variable", "single predictor",
+      "one feature predict", "predict house price",
+      "predict from size", "predict from one",
+      "simple regression", "only one variable predict",
+      "predict using one", "single variable regression"
+    ],
+    "when_to_use": "Use when predicting a continuous outcome from exactly one continuous predictor variable.",
+    "intuition": "Regression draws the single best straight line through a cloud of points \u2014 best meaning it minimizes the total squared vertical distance from every point to the line. Once you have this line you can plug in any X value and read off a predicted Y. The slope tells you: for every one unit increase in X, Y changes by this much. Unlike correlation which just says these move together, regression gives you a prediction machine.",
+    "formula": {
+      "expression": "$\\hat{Y} = \\beta_0 + \\beta_1 X$ where $\\beta_1 = \\dfrac{\\sum(X_i - \\bar{X})(Y_i - \\bar{Y})}{\\sum(X_i - \\bar{X})^2}$",
+      "legend": {
+        "\\hat{Y}": "Predicted value of the dependent variable",
+        "\\beta_0": "Intercept \u2014 predicted Y when X = 0",
+        "\\beta_1": "Slope \u2014 change in Y for each unit increase in X",
+        "R^2": "Proportion of variance in Y explained by X"
+      }
+    },
+    "real_world_example": "Uber uses regression to predict surge pricing. X = number of ride requests, Y = price multiplier. The slope tells them: for every 100 additional requests multiply base price by 0.15 more.",
+    "why": "Linear regression models the relationship Y = \u03b20 + \u03b21*X + \u03b5 estimating how much Y changes for each unit change in X. Use multiple linear regression when you have more than one predictor.",
+    "assumptions": [
+      "Linearity: The relationship between X and Y is linear.",
+      "Independence: Observations are independent.",
+      "Homoscedasticity: Residuals have constant variance across all levels of X.",
+      "Normality of Residuals: Residuals are approximately normally distributed.",
+      "For more than one predictor use Multiple Linear Regression."
+    ],
+    "mini_example": {
+      "scenario": "Predict house price from house size in square feet.",
+      "code": "import numpy as np\nfrom sklearn.linear_model import LinearRegression\nfrom sklearn.metrics import r2_score\n\nsize  = np.array([500, 750, 1000, 1200, 1500, 1800, 2000, 2500]).reshape(-1, 1)\nprice = np.array([150, 200,  250,  280,  350,  400,  450,  550])\n\nmodel = LinearRegression().fit(size, price)\nprint(f'Intercept (\u03b20): {model.intercept_:.2f}')\nprint(f'Slope (\u03b21): {model.coef_[0]:.4f}')\nprint(f'R\u00b2 Score: {r2_score(price, model.predict(size)):.4f}')\nprint(f'Predicted for 1600 sq ft: ${model.predict([[1600]])[0]*1000:.0f}')",
+      "interpretation": "R\u00b2 = 0.99 means the model explains 99% of variance in house prices."
+    },
+    "common_mistakes": [
+      "Extrapolating predictions far outside the training data range.",
+      "Not checking residual plots for assumption violations.",
+      "Using simple regression when multiple predictors are needed.",
+      "Confusing correlation with regression \u2014 they answer different questions."
+    ],
+    "effect_size": "R\u00b2 = proportion of variance explained by the model."
+  },
+  {
+    "id": "multiple_linear_regression",
+    "concept": "Multiple Linear Regression",
+    "category": "Correlation & Regression",
+    "keywords": [
+      "multiple predictors", "several variables predict", "multiple variables",
+      "more than one predictor", "control for variables", "multiple features",
+      "predict from many variables", "multivariate regression",
+      "predict continuous multiple", "many independent variables",
+      "predict salary", "predict from age", "predict from experience",
+      "age experience education predict", "together predict",
+      "multiple factors predict", "predict using several",
+      "salary prediction", "predict income", "continuous outcome multiple"
+    ],
+    "when_to_use": "Use when predicting a continuous outcome from two or more predictor variables simultaneously.",
+    "intuition": "Simple regression uses one variable to predict an outcome. But in real life outcomes are influenced by many factors simultaneously. Multiple regression lets you use all of them at once. Crucially it also controls for confounding \u2014 it tells you the effect of X1 on Y while holding all other predictors constant. This is why it is the backbone of most real-world predictive models.",
+    "formula": {
+      "expression": "$\\hat{Y} = \\beta_0 + \\beta_1 X_1 + \\beta_2 X_2 + \\cdots + \\beta_k X_k$",
+      "legend": {
+        "\\hat{Y}": "Predicted value of the outcome",
+        "\\beta_0": "Intercept \u2014 baseline value when all predictors are zero",
+        "\\beta_j": "Partial slope for predictor j \u2014 effect of Xj holding all others constant",
+        "k": "Number of predictor variables",
+        "R^2": "Proportion of variance in Y explained by all predictors together"
+      }
+    },
+    "real_world_example": "A bank predicts loan default probability using credit score, income, age, debt-to-income ratio, and employment history simultaneously. Each coefficient tells them the independent contribution of that factor while controlling for all the others.",
+    "why": "When multiple factors influence an outcome using them all simultaneously gives better predictions and isolates each variable's true independent effect on the outcome.",
+    "assumptions": [
+      "Linear relationship between each predictor and the outcome.",
+      "Independence of observations.",
+      "Homoscedasticity: constant residual variance.",
+      "Normality of residuals.",
+      "No multicollinearity: predictors should not be highly correlated with each other (check VIF)."
+    ],
+    "mini_example": {
+      "scenario": "Predict house price from size AND number of bedrooms AND age of house.",
+      "code": "import numpy as np\nfrom sklearn.linear_model import LinearRegression\nfrom sklearn.metrics import r2_score\n\n# Features: [size_sqft, bedrooms, age_years]\nX = np.array([[800,2,10],[1200,3,5],[1500,3,8],[1800,4,3],\n              [2000,4,1],[900,2,15],[1100,3,12],[2200,5,2]])\ny = np.array([200, 280, 350, 400, 450, 210, 260, 500])\n\nmodel = LinearRegression().fit(X, y)\nprint('Coefficients (size, bedrooms, age):', model.coef_)\nprint(f'Intercept: {model.intercept_:.2f}')\nprint(f'R\u00b2: {r2_score(y, model.predict(X)):.4f}')\n\n# Predict for new house\nnew_house = np.array([[1600, 3, 5]])\nprint(f'Predicted price: ${model.predict(new_house)[0]*1000:.0f}')",
+      "interpretation": "Each coefficient shows how much price changes per unit increase in that feature holding others constant."
+    },
+    "common_mistakes": [
+      "Including highly correlated predictors \u2014 causes multicollinearity inflating standard errors.",
+      "Adding too many predictors with too few observations \u2014 rule of thumb is 10-20 observations per predictor.",
+      "Not checking VIF (Variance Inflation Factor) for multicollinearity.",
+      "Confusing with simple regression \u2014 always specify how many predictors you have."
+    ],
+    "effect_size": "R\u00b2 and Adjusted R\u00b2 (penalizes for adding unhelpful predictors)."
+  },
+  {
+    "id": "logistic_regression",
+    "concept": "Logistic Regression",
+    "category": "Correlation & Regression",
+    "keywords": [
+      "binary outcome", "yes no", "classify", "classification",
+      "probability", "0 or 1", "pass fail", "disease no disease",
+      "predict category", "predict binary", "two class outcome",
+      "predict yes or no", "will it happen or not",
+      "churn prediction", "customer churn", "churn yes no",
+      "predict whether", "will customer", "predict based on usage",
+      "predict outcome yes no", "binary prediction"
+    ],
+    "when_to_use": "Use when predicting a binary (two-category) outcome from one or more predictor variables.",
+    "intuition": "Linear regression predicts a number but what if you need a probability between 0 and 1? A straight line can give you -0.3 or 1.8 which make no sense as probabilities. Logistic regression bends the line into an S-shaped sigmoid curve always between 0 and 1. If someone studies 10 hours the sigmoid squeezes that raw score to 0.985 meaning 98.5% chance of passing. The model learns what threshold separates the two outcomes.",
+    "formula": {
+      "expression": "$P(Y=1) = \\dfrac{1}{1 + e^{-(\\beta_0 + \\beta_1 X)}}$",
+      "legend": {
+        "P(Y=1)": "Probability of the positive outcome (yes/pass/disease)",
+        "e": "Euler's number approximately 2.718",
+        "\\beta_0": "Intercept of the log-odds line",
+        "\\beta_1": "Log-odds change per unit increase in X",
+        "e^{\\beta_1}": "Odds ratio \u2014 multiply odds by this for each unit increase in X"
+      }
+    },
+    "real_world_example": "Banks use logistic regression to predict loan default (1 = default, 0 = repaid) based on credit score, income, and debt ratio. For each applicant the model outputs a probability like 0.73 meaning 73% chance of default. The bank sets a threshold to decide whether to approve the loan.",
+    "why": "Linear regression can produce probabilities outside 0 and 1. Logistic regression uses the sigmoid function to constrain predictions to valid probabilities.",
+    "assumptions": [
+      "Binary dependent variable (0/1, yes/no, pass/fail).",
+      "Independence of observations.",
+      "No multicollinearity among predictors.",
+      "Large sample size \u2014 at least 10-20 events per predictor variable.",
+      "Linear relationship between predictors and LOG-ODDS not the outcome itself."
+    ],
+    "mini_example": {
+      "scenario": "Predict if a student passes or fails based on hours studied.",
+      "code": "import numpy as np\nfrom sklearn.linear_model import LogisticRegression\nfrom sklearn.metrics import classification_report\n\nhours  = np.array([1,2,2,3,4,4,5,5,6,7,7,8,9,10,10]).reshape(-1,1)\npassed = np.array([0,0,0,0,0,1,1,0,1,1,1,1,1,1,1])\n\nmodel = LogisticRegression().fit(hours, passed)\nprob = model.predict_proba([[6]])[0][1]\nprint(f'Probability of passing with 6 hrs: {prob:.2%}')\nprint(f'Odds Ratio: {np.exp(model.coef_[0][0]):.4f}')\nprint(classification_report(passed, model.predict(hours)))",
+      "interpretation": "The odds ratio tells you how each additional hour multiplies the odds of passing."
+    },
+    "common_mistakes": [
+      "Using linear regression for binary outcomes \u2014 predictions go outside 0 and 1.",
+      "Not checking for class imbalance \u2014 use AUC not just accuracy.",
+      "Interpreting logistic coefficients as linear effects \u2014 they are log-odds.",
+      "Not scaling features when using regularized logistic regression."
+    ],
+    "effect_size": "Pseudo R\u00b2 (McFadden's) and AUC-ROC score."
+  },
+  {
+    "id": "mann_whitney",
+    "concept": "Mann-Whitney U Test",
+    "category": "Non-Parametric Tests",
+    "keywords": [
+      "non parametric two groups",
+      "ordinal two groups",
+      "skewed two groups",
+      "not normal two groups",
+      "rank two groups",
+      "two groups non normal",
+      "median comparison non parametric",
+      "likert scale two groups",
+      "two groups with outliers",
+      "independent non parametric"
+    ],
+    "when_to_use": "Use as the non-parametric alternative to the independent t-test when data is ordinal, not normally distributed, or has significant outliers.",
+    "intuition": "Instead of comparing raw averages Mann-Whitney asks: if I pick one person at random from Group A and one from Group B what is the probability that the Group A person scores higher? It converts all scores into ranks and checks if one group tends to occupy the top ranks. Because it uses ranks a single extreme outlier cannot distort the result. It is like comparing two sports teams by their league positions rather than exact point totals.",
+    "formula": {
+      "expression": "$U_1 = n_1 n_2 + \\dfrac{n_1(n_1+1)}{2} - R_1$",
+      "legend": {
+        "U_1": "Mann-Whitney U statistic for group 1",
+        "n_1, n_2": "Sample sizes of group 1 and group 2",
+        "R_1": "Sum of ranks assigned to group 1 observations",
+        "U": "The smaller of U1 and U2 compared to critical value table"
+      }
+    },
+    "real_world_example": "A hospital compares patient satisfaction scores (1-10) between two wards. Scores are heavily skewed with a few extreme outliers. Using a t-test would be distorted. Mann-Whitney compares rank distributions to determine if one ward consistently receives higher satisfaction rankings.",
+    "why": "Instead of comparing means Mann-Whitney compares RANKS. No normality assumption needed making it valid for ordinal data and skewed distributions.",
+    "assumptions": [
+      "Two independent groups.",
+      "Ordinal or continuous dependent variable.",
+      "Observations are independent.",
+      "The distribution shapes of the two groups are similar if comparing medians."
+    ],
+    "mini_example": {
+      "scenario": "Compare customer satisfaction ratings (1-5 Likert scale) between two store locations.",
+      "code": "from scipy import stats\nimport numpy as np\n\nstore_A = np.array([3, 4, 4, 5, 3, 4, 2, 5, 4, 3])\nstore_B = np.array([2, 3, 2, 4, 2, 3, 1, 4, 3, 2])\n\n# Check normality first\n_, p_A = stats.shapiro(store_A)\n_, p_B = stats.shapiro(store_B)\nprint(f'Normality p-values: A={p_A:.3f}, B={p_B:.3f}')\n\nstat, p_value = stats.mannwhitneyu(store_A, store_B, alternative='two-sided')\nprint(f'Mann-Whitney U: {stat:.4f}')\nprint(f'P-value: {p_value:.4f}')\nprint(f'Median A={np.median(store_A)}, Median B={np.median(store_B)}')\nif p_value < 0.05:\n    print('Store A has significantly higher ratings.')",
+      "interpretation": "Lower p-value indicates the two groups have significantly different rank distributions."
+    },
+    "common_mistakes": [
+      "Using Mann-Whitney when data is actually normal \u2014 t-test has more power then.",
+      "Assuming Mann-Whitney compares medians \u2014 it compares rank distributions.",
+      "Using for paired data \u2014 use Wilcoxon Signed-Rank Test instead.",
+      "Confusing with Kruskal-Wallis \u2014 Mann-Whitney is for 2 groups only."
+    ],
+    "effect_size": "r = Z / sqrt(N). Small=0.1, Medium=0.3, Large=0.5"
+  },
+  {
+    "id": "descriptive_statistics",
+    "concept": "Descriptive Statistics",
+    "category": "Descriptive Statistics",
+    "keywords": [
+      "summarize data",
+      "describe data",
+      "mean median mode",
+      "spread",
+      "variance",
+      "standard deviation",
+      "exploratory",
+      "eda",
+      "data summary",
+      "distribution shape",
+      "first look at data",
+      "understand my data",
+      "explore dataset",
+      "data overview",
+      "summary statistics",
+      "summarize",
+      "describe",
+      "dataset",
+      "summary",
+      "explore",
+      "overview data",
+      "data description"
+    ],
+    "when_to_use": "Always start any analysis here to understand central tendency, spread, shape, and outliers before applying any inferential tests.",
+    "intuition": "Before you run any test you need to understand your data the same way a doctor checks vitals before complex diagnostics. Mean tells you where the center is. Median tells you what a typical value looks like and is resistant to extremes. Standard deviation tells you how spread out values are. Skewness tells you if data leans left or right. Kurtosis tells you if there are heavy tails. Together these reveal data quality issues before you waste time on faulty analyses.",
+    "formula": {
+      "expression": "$\\bar{X} = \\dfrac{\\sum X_i}{n}$, $\\quad s = \\sqrt{\\dfrac{\\sum(X_i - \\bar{X})^2}{n-1}}$, $\\quad \\text{Skewness} = \\dfrac{\\sum(X_i-\\bar{X})^3}{(n-1)s^3}$",
+      "legend": {
+        "\\bar{X}": "Sample mean \u2014 arithmetic average",
+        "s": "Sample standard deviation \u2014 average distance from the mean",
+        "n-1": "Bessel's correction \u2014 uses n-1 for unbiased population variance estimate",
+        "Skewness > 0": "Right-skewed \u2014 long right tail such as income data",
+        "Skewness < 0": "Left-skewed \u2014 long left tail"
+      }
+    },
+    "real_world_example": "Before a targeted ad campaign a marketing team runs descriptive statistics on customer age data. Mean=34, Median=28, Skewness=1.8 reveals right-skew \u2014 a few very old customers pull the mean up. They target median age 28 in their creative not the mean.",
+    "why": "Descriptive stats provide a complete picture of data and guide the choice of appropriate inferential tests.",
+    "assumptions": [
+      "No specific assumptions \u2014 descriptive statistics describe data as-is.",
+      "Mean is appropriate for interval/ratio data. Median is better for ordinal or skewed data.",
+      "Outliers can heavily distort mean and standard deviation."
+    ],
+    "mini_example": {
+      "scenario": "Summarize a dataset of monthly salaries.",
+      "code": "import numpy as np\nfrom scipy import stats\n\nsalaries = np.array([35000,42000,38000,55000,48000,52000,39000,150000,41000,44000])\n\nprint('=== Descriptive Statistics ===')\nprint(f'Mean:     ${np.mean(salaries):,.0f}')\nprint(f'Median:   ${np.median(salaries):,.0f}')\nprint(f'Std Dev:  ${np.std(salaries, ddof=1):,.0f}')\nprint(f'Q1:       ${np.percentile(salaries, 25):,.0f}')\nprint(f'Q3:       ${np.percentile(salaries, 75):,.0f}')\nprint(f'Skewness: {stats.skew(salaries):.4f}')\nprint(f'Kurtosis: {stats.kurtosis(salaries):.4f}')\nprint(f'\\nMean > Median: {np.mean(salaries):.0f} > {np.median(salaries):.0f} \u2014 right skewed due to outlier')",
+      "interpretation": "Mean greater than Median because of the $150,000 outlier. Median is the better measure of center here."
+    },
+    "common_mistakes": [
+      "Reporting only the mean without checking skewness or outliers.",
+      "Using standard deviation for ordinal or nominal data.",
+      "Not distinguishing between population std (ddof=0) and sample std (ddof=1).",
+      "Skipping descriptive stats and jumping straight to inferential tests.",
+      "Treating outliers as errors without investigating their cause."
+    ],
+    "effect_size": "Not applicable \u2014 descriptive stats summarize they do not test hypotheses."
+  },
+  {
+    "id": "central_limit_theorem",
+    "concept": "Central Limit Theorem (CLT)",
+    "category": "Probability & Distributions",
+    "keywords": [
+      "clt",
+      "sampling distribution",
+      "large sample",
+      "normal distribution",
+      "sample mean",
+      "distribution of means",
+      "why use normal",
+      "why is normal distribution used",
+      "sample size effect",
+      "when can I use normal",
+      "large n normal"
+    ],
+    "when_to_use": "Apply CLT reasoning when working with sample means and n >= 30 regardless of the population distribution shape.",
+    "intuition": "Imagine a die \u2014 each face is equally likely so the distribution is perfectly flat not bell-shaped. Now roll it 30 times and take the average. Repeat 1000 times and plot all averages. Remarkably despite the flat original distribution your plot of averages will look like a bell curve. This is the CLT: no matter how weird or skewed the original population averages of large enough samples always form a normal distribution. This is why so many tests assume normality \u2014 they are applied to means not individual values.",
+    "formula": {
+      "expression": "$\\bar{X} \\sim N\\left(\\mu, \\dfrac{\\sigma^2}{n}\\right)$ as $n \\to \\infty$",
+      "legend": {
+        "\\bar{X}": "Sample mean",
+        "\\mu": "True population mean",
+        "\\sigma^2": "Population variance",
+        "n": "Sample size",
+        "\\sigma/\\sqrt{n}": "Standard Error \u2014 how much sample means vary from the true mean"
+      }
+    },
+    "real_world_example": "Quality control at a factory: individual product weights vary wildly. But average weight of batches of 50 items follows a normal distribution \u2014 allowing engineers to set control limits and flag batches that deviate from spec even without knowing the individual weight distribution shape.",
+    "why": "The CLT justifies using normal-based statistical tests with large samples regardless of the population distribution shape.",
+    "assumptions": [
+      "Random sampling.",
+      "Samples are independent.",
+      "Sample size is sufficiently large \u2014 n >= 30 is the standard rule of thumb.",
+      "Finite population mean and variance."
+    ],
+    "mini_example": {
+      "scenario": "Demonstrate CLT by sampling from a skewed exponential distribution.",
+      "code": "import numpy as np\nfrom scipy import stats\n\nnp.random.seed(42)\npopulation = np.random.exponential(scale=2, size=100000)\n\nsample_means = [np.random.choice(population, size=30).mean() for _ in range(1000)]\nsample_means = np.array(sample_means)\n\nprint(f'Population mean:      {population.mean():.4f}')\nprint(f'Mean of sample means: {sample_means.mean():.4f}')\nprint(f'Std Error (theory):   {population.std()/np.sqrt(30):.4f}')\nprint(f'Std of sample means:  {sample_means.std():.4f}')\n\n_, p = stats.shapiro(sample_means[:50])\nprint(f'Shapiro p-value: {p:.4f} \u2014 normal if > 0.05')",
+      "interpretation": "Even though population is exponential (skewed) sample means of size 30 are approximately normal."
+    },
+    "common_mistakes": [
+      "Applying CLT with very small samples from heavily skewed populations.",
+      "Confusing population distribution with sampling distribution.",
+      "Thinking CLT makes individual observations normal \u2014 it only applies to means.",
+      "Using CLT when sampling without replacement from a small finite population."
+    ],
+    "effect_size": "Standard Error = sigma / sqrt(n) \u2014 shrinks as n grows."
+  },
+  {
+    "id": "bayes_theorem",
+    "concept": "Bayes' Theorem",
+    "category": "Probability & Distributions",
+    "keywords": [
+      "conditional probability",
+      "prior posterior",
+      "bayesian",
+      "probability given",
+      "update probability",
+      "medical test",
+      "diagnostic",
+      "bayes",
+      "prior belief",
+      "posterior probability",
+      "new evidence update",
+      "probability after evidence"
+    ],
+    "when_to_use": "Use when you need to update probabilities based on new evidence or compute conditional probabilities.",
+    "intuition": "Bayes' Theorem is about updating your beliefs rationally when new evidence arrives. Start with what you already know \u2014 the prior such as 1% of people have a disease. Then observe new evidence such as a positive test result. Bayes tells you exactly how much to update your belief. The counterintuitive insight is that even a highly accurate test can produce mostly false positives when the disease is rare because the large pool of healthy people generates more false positives than the small pool of sick people generates true positives.",
+    "formula": {
+      "expression": "$P(A|B) = \\dfrac{P(B|A) \\cdot P(A)}{P(B)}$",
+      "legend": {
+        "P(A|B)": "Posterior \u2014 probability of A given that B occurred (what you want to find)",
+        "P(B|A)": "Likelihood \u2014 probability of observing B if A is true",
+        "P(A)": "Prior \u2014 your initial belief about A before seeing evidence B",
+        "P(B)": "Marginal probability = P(B|A)*P(A) + P(B|not A)*P(not A)"
+      }
+    },
+    "real_world_example": "Spam filters use Bayes' Theorem. Prior: 40% of emails are spam. Likelihood: the word FREE appears in 80% of spam but only 5% of legitimate emails. When a new email contains FREE Bayes updates the spam probability from 40% to over 91%. This is Naive Bayes classification.",
+    "why": "Bayes' Theorem provides a mathematical framework for updating beliefs with evidence: P(A|B) = P(B|A)*P(A)/P(B).",
+    "assumptions": [
+      "You must know or estimate the prior probability P(A).",
+      "You must know the likelihood P(B|A).",
+      "You must know or compute the marginal probability P(B).",
+      "Events must be clearly defined."
+    ],
+    "mini_example": {
+      "scenario": "Medical test with 99% sensitivity and 95% specificity. Disease prevalence is 1%.",
+      "code": "P_disease            = 0.01\nP_no_disease         = 1 - P_disease\nP_pos_given_disease  = 0.99\nP_pos_given_no_dis   = 0.05\n\nP_positive = (P_pos_given_disease * P_disease +\n              P_pos_given_no_dis  * P_no_disease)\n\nP_disease_given_pos = (P_pos_given_disease * P_disease) / P_positive\n\nprint(f'P(Disease | Positive) = {P_disease_given_pos:.2%}')\nprint(f'Despite 99% sensitivity only {P_disease_given_pos:.1%} of positives have the disease!')\nprint('This is the Base Rate Fallacy.')",
+      "interpretation": "Low disease prevalence means most positives are false positives even with a very accurate test."
+    },
+    "common_mistakes": [
+      "Ignoring the base rate (prior) \u2014 the Base Rate Fallacy.",
+      "Confusing P(A|B) with P(B|A) \u2014 the Inverse Fallacy.",
+      "Assuming sensitivity equals P(Disease|Positive) \u2014 it is P(Positive|Disease).",
+      "Not updating beliefs sequentially when multiple evidence pieces arrive."
+    ],
+    "effect_size": "Not directly applicable \u2014 Bayes gives you updated probabilities."
+  },
+  {
+    "id": "one_sample_t_test",
+    "concept": "One Sample t-Test",
+    "category": "Hypothesis Testing",
+    "keywords": [
+      "one sample",
+      "single group",
+      "compare to known value",
+      "compare mean to standard",
+      "test against value",
+      "compare to benchmark",
+      "compare to population mean",
+      "is my average different from",
+      "does my data match",
+      "compare my group to a fixed number",
+      "test if mean equals",
+      "single sample test",
+      "one group test",
+      "is average height different from national average",
+      "does our mean differ from industry standard",
+      "compare sample to target",
+      "test against known mean",
+      "one group compare",
+      "single mean test",
+      "my group vs standard",
+      "sample vs population",
+      "benchmark value",
+      "known value compare",
+      "sample mean vs fixed",
+      "compare to standard value",
+      "single group vs target",
+      "compare sample to reference",
+      "mean vs benchmark",
+      "sample mean benchmark",
+      "compare sample benchmark",
+      "mean vs known",
+      "sample vs known value"
+    ],
+    "when_to_use": "Use when you have one group and want to compare its mean against a known or hypothesized population value.",
+    "intuition": "Imagine your factory produces bolts that should weigh exactly 50g. You sample 30 bolts and measure them. The one sample t-test asks: is the average weight of my sample significantly different from 50g, or is the difference just random variation? You are not comparing two groups \u2014 you are comparing one group against a fixed reference value you already know.",
+    "formula": {
+      "expression": "$t = \\dfrac{\\bar{X} - \\mu_0}{s / \\sqrt{n}}$",
+      "legend": {
+        "\\bar{X}": "Sample mean \u2014 average of your observed data",
+        "\\mu_0": "Hypothesized population mean \u2014 the known benchmark value",
+        "s": "Sample standard deviation",
+        "n": "Sample size",
+        "t": "t-statistic compared against t-distribution with n-1 degrees of freedom"
+      }
+    },
+    "real_world_example": "A hospital checks whether its average patient waiting time (measured from 40 patients) is significantly different from the national standard of 25 minutes. They do not have another hospital to compare against \u2014 they just want to know if they differ from the known benchmark. One sample t-test gives them the answer.",
+    "why": "When you have one group and a known reference value the one sample t-test directly quantifies whether the difference between your sample mean and the reference is larger than what random chance would produce.",
+    "assumptions": [
+      "Data is continuous (interval or ratio scale).",
+      "Sample is randomly drawn from the population.",
+      "Data is approximately normally distributed (or n >= 30 by CLT).",
+      "The reference value (mu_0) is known and fixed, not estimated from data.",
+      "Observations are independent of each other."
+    ],
+    "mini_example": {
+      "scenario": "Test if average delivery time (sample of 30) differs from the target of 48 hours.",
+      "code": "from scipy import stats\nimport numpy as np\n\n# Sample delivery times in hours\ndelivery_times = np.array([45,50,48,52,47,49,51,46,53,48,\n                           47,50,49,51,46,48,52,47,50,49,\n                           48,51,46,50,47,49,52,48,51,46])\n\nmu_0 = 48  # target delivery time\n\n# Check normality first\n_, p_norm = stats.shapiro(delivery_times)\nprint(f'Shapiro p-value: {p_norm:.4f}')\n\nt_stat, p_value = stats.ttest_1samp(delivery_times, mu_0)\nprint(f'Sample mean: {delivery_times.mean():.2f} hrs')\nprint(f'T-statistic: {t_stat:.4f}')\nprint(f'P-value: {p_value:.4f}')\nif p_value < 0.05:\n    print('Mean significantly differs from 48hr target.')\nelse:\n    print('No significant difference from 48hr target.')",
+      "interpretation": "If p < 0.05 the average delivery time is significantly different from the 48 hour target."
+    },
+    "common_mistakes": [
+      "Using independent t-test when you only have one group and a known reference value.",
+      "Confusing the reference value (mu_0) with another sample mean \u2014 if it is estimated from data use independent t-test.",
+      "Not checking normality for small samples \u2014 use Wilcoxon signed-rank one-sample version if non-normal.",
+      "Reporting only significance without reporting the actual difference and effect size."
+    ],
+    "effect_size": "Cohen's d = (sample_mean - mu_0) / sample_std. Small=0.2, Medium=0.5, Large=0.8"
+  },
+  {
+    "id": "shapiro_wilk_test",
+    "concept": "Shapiro-Wilk Normality Test",
+    "category": "Assumption Testing",
+    "keywords": [
+      "normality test",
+      "check normality",
+      "test for normal distribution",
+      "is my data normal",
+      "shapiro",
+      "shapiro wilk",
+      "normality assumption",
+      "check if normal",
+      "how do I know if data is normal",
+      "test normality assumption",
+      "verify normality",
+      "confirm normal distribution",
+      "data normally distributed",
+      "check distribution shape",
+      "before t-test check",
+      "assumption check normality",
+      "parametric test assumption",
+      "normality before anova",
+      "is distribution normal",
+      "test gaussian",
+      "normal check",
+      "distribution test",
+      "my data normal or not",
+      "check before parametric",
+      "normality verification",
+      "check if data is normally distributed",
+      "how to check normality",
+      "test if normal",
+      "normality check",
+      "data normal check",
+      "verify normal distribution",
+      "normality before test",
+      "is distribution normal",
+      "check normal assumption",
+      "check normally distributed",
+      "data normally distributed check",
+      "how to check if normal",
+      "normality before t",
+      "test normality",
+      "normality assumption check"
+    ],
+    "when_to_use": "Use before applying any parametric test (t-test, ANOVA, Pearson) to verify that your data is approximately normally distributed, especially when sample size is small (n < 30).",
+    "intuition": "Most powerful statistical tests assume your data follows a bell curve. But how do you actually verify this? Shapiro-Wilk compares your data to what a perfectly normal dataset of the same size would look like. If your data is close enough to normal the test returns a high p-value (no significant departure). If the data is clearly skewed or has heavy tails the p-value is low signaling you should use a non-parametric test instead. Think of it as a gatekeeper test you run before the real test.",
+    "formula": {
+      "expression": "$W = \\dfrac{\\left(\\sum_{i=1}^{n} a_i x_{(i)}\\right)^2}{\\sum_{i=1}^{n}(x_i - \\bar{x})^2}$",
+      "legend": {
+        "W": "Shapiro-Wilk statistic \u2014 closer to 1.0 means more normal",
+        "x_{(i)}": "The i-th order statistic (sorted data values)",
+        "a_i": "Coefficients derived from expected normal order statistics",
+        "\\bar{x}": "Sample mean",
+        "p-value > 0.05": "Fail to reject normality \u2014 data is approximately normal",
+        "p-value < 0.05": "Reject normality \u2014 use non-parametric test"
+      }
+    },
+    "real_world_example": "A data scientist wants to run an independent t-test comparing salaries between two departments. Before proceeding she runs Shapiro-Wilk on each group. Department A gives p=0.34 (normal) but Department B gives p=0.02 (not normal \u2014 likely skewed by a few very high earners). She switches to Mann-Whitney U test instead of t-test.",
+    "why": "Parametric tests like t-test and ANOVA produce unreliable p-values when applied to non-normal data especially with small samples. Shapiro-Wilk provides a formal statistical decision rule for whether normality holds.",
+    "assumptions": [
+      "Works best for small to medium samples (n between 3 and 50).",
+      "For large samples (n > 50) even tiny non-normality becomes significant \u2014 use Q-Q plot visually instead.",
+      "Test each group separately before a two-group comparison.",
+      "A non-significant result (p > 0.05) means normality is plausible, not proven."
+    ],
+    "mini_example": {
+      "scenario": "Check normality of two groups before deciding which test to use.",
+      "code": "from scipy import stats\nimport numpy as np\n\ngroup_a = np.array([23, 25, 28, 22, 27, 24, 26, 25, 23, 28])\ngroup_b = np.array([15, 45, 22, 60, 18, 55, 20, 48, 17, 52])  # skewed\n\nfor name, data in [('Group A', group_a), ('Group B', group_b)]:\n    stat, p = stats.shapiro(data)\n    conclusion = 'NORMAL \u2014 use parametric test' if p > 0.05 else 'NOT NORMAL \u2014 use non-parametric'\n    print(f'{name}: W={stat:.4f}, p={p:.4f} \u2192 {conclusion}')\n\n# Decision\n_, p_a = stats.shapiro(group_a)\n_, p_b = stats.shapiro(group_b)\nif p_a > 0.05 and p_b > 0.05:\n    print('Both normal \u2192 use Independent t-Test')\nelse:\n    print('At least one not normal \u2192 use Mann-Whitney U Test')",
+      "interpretation": "p > 0.05 means normality assumption holds. p < 0.05 means switch to the non-parametric alternative."
+    },
+    "common_mistakes": [
+      "Skipping normality check and blindly applying t-test or ANOVA.",
+      "Using Shapiro-Wilk on large samples (n > 50) \u2014 it becomes oversensitive and flags trivial deviations.",
+      "Checking normality on the raw data for paired t-test \u2014 you must check normality of the DIFFERENCES.",
+      "Treating p > 0.05 as proof of normality \u2014 it only means you cannot reject it.",
+      "Not using Q-Q plots alongside the test \u2014 visual inspection adds important context."
+    ],
+    "effect_size": "Not applicable \u2014 Shapiro-Wilk is an assumption check not a comparison test."
+  },
+  {
+    "id": "levene_test",
+    "concept": "Levene's Test for Equality of Variances",
+    "category": "Assumption Testing",
+    "keywords": [
+      "levene test",
+      "equal variances",
+      "homogeneity of variance",
+      "variance equality test",
+      "test equal spread",
+      "check variance assumption",
+      "homoscedasticity test",
+      "are variances equal",
+      "do groups have same spread",
+      "variance assumption check",
+      "equal variance assumption",
+      "before t-test variance",
+      "variance homogeneity",
+      "check if variances are equal",
+      "test variance difference",
+      "before anova variance check",
+      "assumption before t-test",
+      "groups same variance",
+      "spread equality test",
+      "variance test two groups",
+      "equal spread assumption",
+      "variance check",
+      "spread check",
+      "same variance test",
+      "variance assumption violated",
+      "unequal spread test",
+      "check variances equal",
+      "equal variance before test",
+      "variance check before t-test",
+      "same spread groups",
+      "variance equality check",
+      "homogeneity check",
+      "groups same variance check",
+      "spread equal test",
+      "variance assumption two groups",
+      "equal spread check",
+      "equal variance check",
+      "variance equal test",
+      "check variance before",
+      "same spread check",
+      "groups same spread",
+      "spread equality",
+      "variance assumption groups",
+      "equal spread groups"
+    ],
+    "when_to_use": "Use before running an independent t-test or ANOVA to verify that all groups have approximately equal variances. If violated, switch to Welch's t-test or Welch's ANOVA.",
+    "intuition": "Imagine two groups where Group A has scores tightly clustered between 48 and 52, while Group B has scores ranging from 10 to 90. Their averages might be the same but their spreads are completely different. Standard t-test and ANOVA assume both groups have similar spread. Levene's test formally checks this by measuring how much each observation deviates from its group median and then testing if those deviations differ across groups.",
+    "formula": {
+      "expression": "$W = \\dfrac{(N-k)}{(k-1)} \\cdot \\dfrac{\\sum_{i=1}^{k} n_i (\\bar{Z}_{i.} - \\bar{Z}_{..})^2}{\\sum_{i=1}^{k} \\sum_{j=1}^{n_i} (Z_{ij} - \\bar{Z}_{i.})^2}$",
+      "legend": {
+        "W": "Levene test statistic \u2014 compared to F-distribution",
+        "Z_{ij}": "Absolute deviation of observation j in group i from its group median",
+        "\\bar{Z}_{i.}": "Mean of deviations in group i",
+        "\\bar{Z}_{..}": "Overall mean of all deviations",
+        "k": "Number of groups",
+        "N": "Total observations",
+        "p > 0.05": "Equal variances \u2014 proceed with standard t-test or ANOVA",
+        "p < 0.05": "Unequal variances \u2014 use Welch's t-test or Welch's ANOVA"
+      }
+    },
+    "real_world_example": "A researcher comparing productivity scores between remote and office workers runs Levene's test first. Result: p=0.03, meaning the two groups have significantly different variances \u2014 office workers are more consistent while remote workers vary widely. She switches from independent t-test to Welch's t-test to correctly handle the unequal spreads.",
+    "why": "Standard t-test and ANOVA inflate false positive rates when group variances are unequal. Levene's test acts as a gatekeeper \u2014 its result directly tells you which test to use next.",
+    "assumptions": [
+      "Works for two or more groups.",
+      "Data should be continuous.",
+      "Observations must be independent.",
+      "Levene's test itself is robust to non-normality \u2014 more robust than Bartlett's test."
+    ],
+    "mini_example": {
+      "scenario": "Check variance equality before choosing between t-test and Welch's t-test.",
+      "code": "from scipy import stats\nimport numpy as np\n\ngroup_a = np.array([50, 52, 48, 51, 49, 50, 52, 48, 51, 50])  # low variance\ngroup_b = np.array([30, 70, 25, 75, 35, 65, 28, 72, 32, 68])  # high variance\n\nprint(f'Variance A: {np.var(group_a, ddof=1):.2f}')\nprint(f'Variance B: {np.var(group_b, ddof=1):.2f}')\n\nstat, p_value = stats.levene(group_a, group_b)\nprint(f'Levene statistic: {stat:.4f}')\nprint(f'P-value: {p_value:.4f}')\n\nif p_value > 0.05:\n    print('Equal variances \u2192 use Independent t-Test (equal_var=True)')\n    t, p = stats.ttest_ind(group_a, group_b, equal_var=True)\nelse:\n    print('Unequal variances \u2192 use Welchs t-Test (equal_var=False)')\n    t, p = stats.ttest_ind(group_a, group_b, equal_var=False)\n\nprint(f'Test result: t={t:.4f}, p={p:.4f}')",
+      "interpretation": "p > 0.05 means use standard t-test. p < 0.05 means use Welch's t-test."
+    },
+    "common_mistakes": [
+      "Skipping Levene's test and always using standard t-test \u2014 risks inflated false positives.",
+      "Confusing Levene's test (robust) with Bartlett's test (sensitive to non-normality).",
+      "Running Levene's test after the t-test \u2014 it must be run BEFORE to guide test selection.",
+      "Misreading the result \u2014 p < 0.05 means variances ARE different, so switch tests."
+    ],
+    "effect_size": "Not applicable \u2014 Levene's is an assumption check not a comparison test."
+  },
+  {
+    "id": "confidence_intervals",
+    "concept": "Confidence Intervals",
+    "category": "Estimation",
+    "keywords": [
+      "confidence interval",
+      "confidence level",
+      "95 percent confidence",
+      "interval estimate",
+      "margin of error",
+      "CI",
+      "range estimate",
+      "uncertainty range",
+      "how confident am I in my estimate",
+      "range for true mean",
+      "what is the true value range",
+      "estimate with uncertainty",
+      "plausible range for parameter",
+      "bounds on estimate",
+      "where does the true mean lie",
+      "range around sample mean",
+      "95% CI",
+      "99% confidence interval",
+      "construct interval",
+      "build confidence interval",
+      "calculate confidence interval",
+      "lower bound upper bound estimate",
+      "interval for mean",
+      "how precise is my estimate",
+      "uncertainty in estimate",
+      "range of likely values",
+      "estimate range"
+    ],
+    "when_to_use": "Use when you want to express the uncertainty around a sample estimate and provide a plausible range for the true population parameter.",
+    "intuition": "A sample mean is a single point estimate \u2014 it gives you one number but tells you nothing about how precise or uncertain it is. A confidence interval wraps that point estimate in a range. A 95% confidence interval means: if you repeated your study 100 times and built a CI each time, 95 of those intervals would contain the true population mean. It is not a probability about the true value \u2014 the true value is fixed. It is a statement about the reliability of your method.",
+    "formula": {
+      "expression": "$CI = \\bar{X} \\pm t_{\\alpha/2, n-1} \\cdot \\dfrac{s}{\\sqrt{n}}$",
+      "legend": {
+        "\\bar{X}": "Sample mean \u2014 center of the interval",
+        "t_{\\alpha/2, n-1}": "Critical t-value for confidence level (1.96 for 95% CI with large n)",
+        "s": "Sample standard deviation",
+        "n": "Sample size",
+        "s/\\sqrt{n}": "Standard error \u2014 how much the mean varies across samples",
+        "\\pm": "The interval extends equally above and below the mean"
+      }
+    },
+    "real_world_example": "A polling company surveys 1000 voters and finds 52% support a candidate. They report this as 52% \u00b1 3% with 95% confidence. The confidence interval (49% to 55%) tells voters and analysts how much uncertainty exists in the estimate due to sampling \u2014 it is not a certain prediction but a range of plausible true values.",
+    "why": "Point estimates alone are misleading because they ignore sampling variability. Confidence intervals communicate both the estimate and its precision in a single interpretable range.",
+    "assumptions": [
+      "Data is randomly sampled from the population.",
+      "For the t-based CI: data is approximately normally distributed or n >= 30.",
+      "Observations are independent.",
+      "For proportion CI: use normal approximation when np >= 5 and n(1-p) >= 5."
+    ],
+    "mini_example": {
+      "scenario": "Calculate 95% confidence interval for average customer satisfaction score.",
+      "code": "from scipy import stats\nimport numpy as np\n\nscores = np.array([7,8,6,9,7,8,7,9,6,8,7,8,9,7,6,8,7,9,8,7,\n                   6,8,7,9,8,7,6,9,8,7])\n\nn    = len(scores)\nmean = np.mean(scores)\nse   = stats.sem(scores)  # standard error\n\n# 95% CI using t-distribution\nci_low, ci_high = stats.t.interval(\n    confidence=0.95,\n    df=n-1,\n    loc=mean,\n    scale=se\n)\n\nprint(f'Sample mean:      {mean:.3f}')\nprint(f'Standard error:   {se:.3f}')\nprint(f'95% CI:           ({ci_low:.3f}, {ci_high:.3f})')\nprint(f'Margin of error:  \u00b1{(ci_high - mean):.3f}')\nprint(f'Interpretation: We are 95% confident the true mean score')\nprint(f'lies between {ci_low:.2f} and {ci_high:.2f}')",
+      "interpretation": "Narrower CI means more precise estimate. Width is reduced by increasing sample size."
+    },
+    "common_mistakes": [
+      "Saying 'there is 95% probability the true mean is in this interval' \u2014 the true mean is fixed, the interval is random.",
+      "Confusing confidence level with probability \u2014 95% CI does not mean 95% chance.",
+      "Using z critical value instead of t for small samples (n < 30).",
+      "Wider CI does not mean worse data \u2014 it honestly reflects more uncertainty.",
+      "Confusing prediction interval (for individual observations) with confidence interval (for the mean)."
+    ],
+    "effect_size": "Width of CI = 2 \u00d7 margin of error. Narrower is more precise. Halving CI width requires 4x the sample size."
+  },
+  {
+    "id": "hypothesis_testing_framework",
+    "concept": "Hypothesis Testing Framework",
+    "category": "Foundations",
+    "keywords": [
+      "hypothesis testing",
+      "null hypothesis",
+      "alternative hypothesis",
+      "p-value",
+      "significance level",
+      "alpha level",
+      "reject null",
+      "fail to reject",
+      "statistical significance",
+      "what is p-value",
+      "how does hypothesis testing work",
+      "explain p-value",
+      "what does p value mean",
+      "how to interpret p value",
+      "what is null hypothesis",
+      "explain statistical significance",
+      "how to test hypothesis",
+      "H0 H1",
+      "type of hypothesis",
+      "set up hypothesis",
+      "p value 0.05",
+      "significance 0.05",
+      "alpha 0.05",
+      "what does reject null mean",
+      "statistical decision",
+      "is result significant",
+      "how to know if significant",
+      "p value explanation",
+      "hypothesis test steps",
+      "significance testing explained",
+      "what is alpha"
+    ],
+    "when_to_use": "Use this framework as the foundation for every statistical test. Before running any test you must define H0, H1, and significance level alpha.",
+    "intuition": "Hypothesis testing is structured skepticism. You start by assuming nothing interesting is happening \u2014 this is the null hypothesis H0. Then you collect data and ask: if H0 were true, how surprising would this data be? The p-value measures that surprise. A very small p-value means the data would be extremely unlikely if H0 were true \u2014 so you reject H0 and conclude something real is going on. You never prove H0 is false \u2014 you just assess how unlikely your data is under it. Think of it like a court trial: H0 is innocent until the evidence (data) is strong enough to convict.",
+    "formula": {
+      "expression": "$p\\text{-value} = P(\\text{data this extreme or more} \\mid H_0 \\text{ is true})$",
+      "legend": {
+        "H_0": "Null hypothesis \u2014 assumption of no effect, no difference, no relationship",
+        "H_1": "Alternative hypothesis \u2014 what you are trying to find evidence for",
+        "\\alpha": "Significance level \u2014 threshold for rejection, typically 0.05",
+        "p < \\alpha": "Reject H0 \u2014 result is statistically significant",
+        "p \\geq \\alpha": "Fail to reject H0 \u2014 insufficient evidence against it",
+        "p\\text{-value}": "Probability of observing data this extreme if H0 were true"
+      }
+    },
+    "real_world_example": "A tech company tests a new website design. H0: new design has same conversion rate as old. H1: new design has different conversion rate. They run an A/B test, collect data from 5000 users, and compute p=0.02. Since p < 0.05 they reject H0 and conclude the new design genuinely changes conversion rates. They then check effect size to decide if the change is large enough to matter.",
+    "why": "Without a formal framework analysts would make decisions based on gut feeling or cherry-picked results. Hypothesis testing provides a repeatable, objective decision procedure with a controlled false positive rate.",
+    "assumptions": [
+      "H0 and H1 must be defined BEFORE looking at the data \u2014 not after.",
+      "Alpha (significance level) must be chosen before the test \u2014 0.05 is convention not law.",
+      "p-value does not measure the size of an effect \u2014 always report effect size too.",
+      "Statistical significance does not equal practical significance.",
+      "Every statistical test (t-test, ANOVA, chi-square) is an application of this framework."
+    ],
+    "mini_example": {
+      "scenario": "Complete hypothesis testing workflow for comparing two group means.",
+      "code": "from scipy import stats\nimport numpy as np\n\n# Step 1: Define hypotheses\nprint('H0: Mean A = Mean B (no difference)')\nprint('H1: Mean A != Mean B (difference exists)')\nprint('Alpha: 0.05')\nprint()\n\n# Step 2: Collect data\ngroup_a = np.array([82,85,88,79,83,86,84,87,81,85])\ngroup_b = np.array([75,78,72,80,74,77,76,79,73,78])\n\n# Step 3: Run test\nt_stat, p_value = stats.ttest_ind(group_a, group_b)\nprint(f'T-statistic: {t_stat:.4f}')\nprint(f'P-value:     {p_value:.4f}')\nprint()\n\n# Step 4: Decision\nalpha = 0.05\nif p_value < alpha:\n    print(f'p={p_value:.4f} < alpha={alpha} \u2192 REJECT H0')\n    print('Conclusion: Significant difference between groups.')\nelse:\n    print(f'p={p_value:.4f} >= alpha={alpha} \u2192 FAIL TO REJECT H0')\n    print('Conclusion: No significant difference detected.')\n\n# Step 5: Effect size\nfrom numpy import std, mean, sqrt\nd = (mean(group_a)-mean(group_b)) / sqrt((std(group_a,ddof=1)**2+std(group_b,ddof=1)**2)/2)\nprint(f'Effect size (Cohen d): {d:.4f}')",
+      "interpretation": "The 5-step workflow: define hypotheses, collect data, run test, make decision, report effect size."
+    },
+    "common_mistakes": [
+      "Defining H1 after seeing the data \u2014 this is p-hacking and invalidates the test.",
+      "Treating p > 0.05 as proof that H0 is true \u2014 it only means insufficient evidence against it.",
+      "Ignoring effect size \u2014 a tiny difference can be statistically significant with a large sample.",
+      "Using 0.05 as a sacred threshold \u2014 it is a convention, not a law of nature.",
+      "Confusing p-value with probability that H0 is true \u2014 p-value assumes H0 is true."
+    ],
+    "effect_size": "Always report alongside p-value. Cohen's d for means, r for correlations, eta-squared for ANOVA."
+  },
+  {
+    "id": "type1_type2_error",
+    "concept": "Type I and Type II Errors",
+    "category": "Foundations",
+    "keywords": [
+      "type 1 error",
+      "type 2 error",
+      "false positive",
+      "false negative",
+      "type I error",
+      "type II error",
+      "alpha error",
+      "beta error",
+      "false alarm",
+      "missed detection",
+      "what is false positive in statistics",
+      "false negative statistics",
+      "probability of wrong conclusion",
+      "error types hypothesis test",
+      "rejecting true null",
+      "accepting false null",
+      "when test says significant but isnt",
+      "missing real effect",
+      "statistical error types",
+      "decision errors",
+      "test errors",
+      "power and error",
+      "alpha and beta error",
+      "incorrectly reject null",
+      "fail to detect real effect",
+      "wrong test conclusion",
+      "test mistakes",
+      "error in hypothesis test",
+      "false significant result",
+      "missed significance",
+      "wrong conclusion",
+      "incorrect test result",
+      "error types statistics",
+      "false significant",
+      "wrong hypothesis decision",
+      "test decision error",
+      "incorrect rejection",
+      "missed real effect"
+    ],
+    "when_to_use": "Understand and apply when designing studies, interpreting test results, or deciding on significance thresholds and sample sizes.",
+    "intuition": "Every hypothesis test can make one of two mistakes. A Type I error is a false alarm \u2014 you conclude there is an effect when there actually is none (like convicting an innocent person). A Type II error is a missed detection \u2014 you conclude there is no effect when there actually is one (like acquitting a guilty person). You control Type I error with your alpha level. You control Type II error with your sample size and power. The cruel trade-off is that reducing one type of error tends to increase the other.",
+    "formula": {
+      "expression": "$\\alpha = P(\\text{Type I}) = P(\\text{Reject } H_0 \\mid H_0 \\text{ true})$ $\\quad \\beta = P(\\text{Type II}) = P(\\text{Fail to reject } H_0 \\mid H_1 \\text{ true})$",
+      "legend": {
+        "\\alpha": "Type I error rate \u2014 significance level, typically set to 0.05",
+        "\\beta": "Type II error rate \u2014 probability of missing a real effect",
+        "1 - \\beta": "Statistical power \u2014 probability of correctly detecting a real effect",
+        "H_0 \\text{ true}": "In reality there is no effect",
+        "H_1 \\text{ true}": "In reality there IS a real effect"
+      }
+    },
+    "real_world_example": "A spam filter illustrates both errors perfectly. Type I error: a legitimate email is flagged as spam (false positive \u2014 you miss an important email). Type II error: a spam email passes through to your inbox (false negative \u2014 the filter misses real spam). Making the filter stricter reduces Type II errors but increases Type I errors. Making it lenient does the opposite.",
+    "why": "Understanding error types is essential for interpreting test results correctly and for designing studies with the right sample size and significance threshold to balance both risks.",
+    "assumptions": [
+      "Type I error rate equals alpha when H0 is true.",
+      "Type II error rate depends on true effect size, sample size, and alpha.",
+      "Power = 1 - beta \u2014 increasing sample size increases power and reduces Type II error.",
+      "These two error types cannot both be minimized simultaneously with fixed sample size."
+    ],
+    "mini_example": {
+      "scenario": "Demonstrate Type I and Type II error rates through simulation.",
+      "code": "import numpy as np\nfrom scipy import stats\n\nnp.random.seed(42)\nN_SIMULATIONS = 1000\nalpha = 0.05\n\n# Type I Error: H0 is TRUE (both groups same mean)\ntype1_errors = 0\nfor _ in range(N_SIMULATIONS):\n    a = np.random.normal(50, 10, 30)\n    b = np.random.normal(50, 10, 30)  # same mean\n    _, p = stats.ttest_ind(a, b)\n    if p < alpha:\n        type1_errors += 1\n\n# Type II Error: H0 is FALSE (real difference exists)\ntype2_errors = 0\nfor _ in range(N_SIMULATIONS):\n    a = np.random.normal(50, 10, 30)\n    b = np.random.normal(53, 10, 30)  # real difference of 3\n    _, p = stats.ttest_ind(a, b)\n    if p >= alpha:\n        type2_errors += 1\n\nprint(f'Type I  error rate: {type1_errors/N_SIMULATIONS:.3f} (expected ~{alpha})')\nprint(f'Type II error rate: {type2_errors/N_SIMULATIONS:.3f}')\nprint(f'Power (1-beta):     {1 - type2_errors/N_SIMULATIONS:.3f}')",
+      "interpretation": "Type I rate should match alpha. Type II rate decreases as sample size or true effect size increases."
+    },
+    "common_mistakes": [
+      "Confusing Type I (false positive) with Type II (false negative) \u2014 use the court analogy to remember.",
+      "Thinking p < 0.05 eliminates Type I error \u2014 it only controls it at the 5% level.",
+      "Ignoring Type II error when planning studies \u2014 this leads to underpowered studies.",
+      "Not reporting power alongside p-values \u2014 a non-significant result from an underpowered study is uninformative.",
+      "Believing a statistically significant result is definitely a real effect \u2014 it could still be a Type I error."
+    ],
+    "effect_size": "Power = 1 - beta. Typical target is power >= 0.80 meaning beta <= 0.20."
+  },
+  {
+    "id": "normal_distribution",
+    "concept": "Normal Distribution",
+    "category": "Probability & Distributions",
+    "keywords": [
+      "normal distribution",
+      "gaussian distribution",
+      "bell curve",
+      "bell shaped",
+      "normally distributed",
+      "gaussian",
+      "what is normal distribution",
+      "explain bell curve",
+      "why is normal distribution important",
+      "properties of normal distribution",
+      "how normal distribution works",
+      "symmetric distribution",
+      "standard normal",
+      "z-score",
+      "68 95 99 rule",
+      "empirical rule",
+      "mean and standard deviation distribution",
+      "probability bell curve",
+      "area under curve normal",
+      "bell shaped data",
+      "symmetric bell",
+      "most data near mean",
+      "distribution shaped like bell",
+      "data follows normal"
+    ],
+    "when_to_use": "Understand when your data follows or approximates a normal distribution, which is the foundation assumption for most parametric statistical tests.",
+    "intuition": "The normal distribution is nature's most common pattern. Heights of people, measurement errors, IQ scores, blood pressure readings \u2014 all tend to cluster symmetrically around a central value with fewer and fewer observations as you move further away in either direction. This bell shape emerges naturally whenever a quantity is the result of many small independent random factors adding together. It is the foundation of parametric statistics because its mathematical properties are beautifully tractable and the CLT guarantees sample means follow it regardless of the original distribution.",
+    "formula": {
+      "expression": "$f(x) = \\dfrac{1}{\\sigma\\sqrt{2\\pi}} e^{-\\frac{1}{2}\\left(\\frac{x-\\mu}{\\sigma}\\right)^2}$",
+      "legend": {
+        "\\mu": "Mean \u2014 center of the bell curve, determines location",
+        "\\sigma": "Standard deviation \u2014 determines the width/spread of the curve",
+        "\\sigma^2": "Variance \u2014 square of standard deviation",
+        "e": "Euler's number approximately 2.718",
+        "68\\%": "Data within 1 standard deviation of the mean",
+        "95\\%": "Data within 2 standard deviations of the mean",
+        "99.7\\%": "Data within 3 standard deviations of the mean"
+      }
+    },
+    "real_world_example": "Manufacturing quality control: the diameter of bolts produced by a machine follows a normal distribution with mean 10mm and standard deviation 0.1mm. Engineers use the 68-95-99.7 rule to set quality thresholds \u2014 bolts outside 3 standard deviations (9.7mm to 10.3mm) are flagged as defective. This allows them to predict defect rates without measuring every single bolt.",
+    "why": "The normal distribution is central to statistics because the Central Limit Theorem guarantees that sample means are normally distributed for large samples, mathematical properties make probability calculations tractable, and most real-world continuous measurements approximate it.",
+    "assumptions": [
+      "Symmetric: mean, median, and mode are all equal.",
+      "Defined entirely by two parameters: mean (mu) and standard deviation (sigma).",
+      "68% of data falls within 1 sigma, 95% within 2 sigma, 99.7% within 3 sigma.",
+      "Extends from negative infinity to positive infinity theoretically.",
+      "Real data only approximates normality \u2014 check with Shapiro-Wilk test."
+    ],
+    "mini_example": {
+      "scenario": "Generate and analyze a normal distribution, apply the 68-95-99.7 rule.",
+      "code": "import numpy as np\nfrom scipy import stats\n\nnp.random.seed(42)\nmu, sigma = 170, 8  # height in cm\ndata = np.random.normal(mu, sigma, 1000)\n\nprint(f'Mean:   {data.mean():.2f} cm')\nprint(f'Std:    {data.std():.2f} cm')\nprint()\nprint('Empirical Rule Check:')\nwithin_1 = np.sum(np.abs(data - mu) <= 1*sigma) / len(data)\nwithin_2 = np.sum(np.abs(data - mu) <= 2*sigma) / len(data)\nwithin_3 = np.sum(np.abs(data - mu) <= 3*sigma) / len(data)\nprint(f'Within 1 sigma: {within_1:.1%} (expected 68%)')\nprint(f'Within 2 sigma: {within_2:.1%} (expected 95%)')\nprint(f'Within 3 sigma: {within_3:.1%} (expected 99.7%)')\n\n# Probability calculations\nprob_above_180 = 1 - stats.norm.cdf(180, mu, sigma)\nprint(f'P(height > 180cm): {prob_above_180:.4f}')",
+      "interpretation": "The 68-95-99.7 rule lets you estimate probabilities without complex calculations."
+    },
+    "common_mistakes": [
+      "Assuming all data is normal without checking \u2014 many real datasets are skewed.",
+      "Confusing normal distribution with uniform distribution \u2014 they look very different.",
+      "Forgetting that normal distribution is symmetric \u2014 if your data is skewed it is not normal.",
+      "Using mean and standard deviation to describe non-normal data \u2014 use median and IQR instead.",
+      "Thinking sample size makes data normal \u2014 CLT applies to sample MEANS not individual values."
+    ],
+    "effect_size": "Z-score = (x - mu) / sigma \u2014 measures how many standard deviations a value is from the mean."
+  },
+  {
+    "id": "effect_size",
+    "concept": "Effect Size",
+    "category": "Foundations",
+    "keywords": [
+      "effect size",
+      "cohen d",
+      "practical significance",
+      "magnitude of effect",
+      "strength of effect",
+      "eta squared",
+      "cohen's d",
+      "practical importance",
+      "is the difference meaningful",
+      "how big is the effect",
+      "statistical vs practical significance",
+      "size of difference",
+      "how important is the result",
+      "meaningful difference",
+      "large enough to matter",
+      "real world importance",
+      "effect size interpretation",
+      "small medium large effect",
+      "beyond p-value",
+      "significance vs importance",
+      "quantify effect",
+      "measure effect magnitude",
+      "report effect size",
+      "effect size after t-test",
+      "does it matter practically",
+      "is difference important",
+      "how meaningful is result",
+      "beyond statistical significance",
+      "how big is effect",
+      "size of effect",
+      "effect magnitude",
+      "practical importance result",
+      "beyond p value",
+      "meaningful result",
+      "practically important",
+      "not just p value",
+      "effect beyond significance",
+      "how big effect",
+      "size of the effect",
+      "effect beyond p value",
+      "not just p value effect",
+      "effect size p value",
+      "practical effect size"
+    ],
+    "when_to_use": "Always report alongside p-values. Effect size answers 'how big is the effect?' while p-value only answers 'is there an effect?'",
+    "intuition": "A p-value tells you whether an effect exists. Effect size tells you whether it matters. With a large enough sample even a completely trivial difference becomes statistically significant. For example with 100,000 patients a drug that reduces blood pressure by 0.1mmHg might give p=0.001 \u2014 highly significant but clinically meaningless. Effect size quantifies the practical magnitude of the difference independently of sample size. Think of p-value as a smoke detector \u2014 it tells you fire is present. Effect size is the thermometer \u2014 it tells you how hot the fire actually is.",
+    "formula": {
+      "expression": "$d = \\dfrac{\\bar{X}_1 - \\bar{X}_2}{s_{pooled}}$ where $s_{pooled} = \\sqrt{\\dfrac{(n_1-1)s_1^2 + (n_2-1)s_2^2}{n_1+n_2-2}}$",
+      "legend": {
+        "d": "Cohen's d \u2014 standardized mean difference",
+        "\\bar{X}_1 - \\bar{X}_2": "Raw difference between group means",
+        "s_{pooled}": "Pooled standard deviation combining both groups",
+        "d = 0.2": "Small effect \u2014 noticeable only with careful measurement",
+        "d = 0.5": "Medium effect \u2014 visible to an attentive observer",
+        "d = 0.8": "Large effect \u2014 obvious to a casual observer"
+      }
+    },
+    "real_world_example": "Two reading programs are compared across 10,000 students. Program A mean=72, Program B mean=73. p=0.001 (highly significant). But Cohen's d=0.05 (tiny effect). Despite the significant p-value the programs are practically identical. A school board would not spend millions switching programs for a 1-point improvement. Effect size exposed what p-value concealed.",
+    "why": "P-values are sensitive to sample size \u2014 larger samples detect smaller and smaller effects. Effect size is independent of sample size making it the true measure of whether a result has real-world importance.",
+    "assumptions": [
+      "Cohen's d assumes approximately normal distributions and similar variances.",
+      "For ANOVA use eta-squared or omega-squared instead of Cohen's d.",
+      "For correlations the r value itself is the effect size.",
+      "For chi-square use Cramer's V as the effect size measure.",
+      "Effect size benchmarks (small/medium/large) are guidelines not rigid rules."
+    ],
+    "mini_example": {
+      "scenario": "Calculate effect size alongside p-value to get the complete picture.",
+      "code": "from scipy import stats\nimport numpy as np\n\ngroup_a = np.array([82,85,88,79,83,86,84,87,81,85,83,86,84,82,85])\ngroup_b = np.array([75,78,72,80,74,77,76,79,73,78,75,77,74,76,78])\n\n# P-value\nt_stat, p_value = stats.ttest_ind(group_a, group_b)\nprint(f'P-value: {p_value:.6f}')\n\n# Cohen's d\ndef cohens_d(a, b):\n    n1, n2 = len(a), len(b)\n    pooled_std = np.sqrt(((n1-1)*np.std(a,ddof=1)**2 +\n                          (n2-1)*np.std(b,ddof=1)**2) / (n1+n2-2))\n    return (np.mean(a) - np.mean(b)) / pooled_std\n\nd = cohens_d(group_a, group_b)\nprint(f'Cohens d: {d:.4f}')\n\nif abs(d) >= 0.8:\n    size = 'Large'\nelif abs(d) >= 0.5:\n    size = 'Medium'\nelse:\n    size = 'Small'\nprint(f'Effect size: {size}')\nprint(f'Conclusion: Statistically significant AND {size} practical effect.')",
+      "interpretation": "Always report both p-value and effect size. One without the other is incomplete."
+    },
+    "common_mistakes": [
+      "Reporting only p-value without effect size \u2014 significance without magnitude is meaningless.",
+      "Assuming statistically significant means practically important \u2014 large samples expose tiny effects.",
+      "Using Cohen's d benchmarks as rigid rules \u2014 context determines what counts as large.",
+      "Forgetting to report effect size for non-significant results \u2014 a null result with large effect size suggests underpowered study.",
+      "Using wrong effect size measure \u2014 Cohen's d for means, r for correlations, eta-squared for ANOVA."
+    ],
+    "effect_size": "Effect size IS the metric here. Cohen's d: Small=0.2, Medium=0.5, Large=0.8. Eta-squared: Small=0.01, Medium=0.06, Large=0.14."
+  }
+]

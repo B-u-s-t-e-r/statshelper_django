@@ -1,0 +1,42 @@
+{% extends "core/base.html" %}
+
+{% block title %}Browse Concepts — StatsHelper{% endblock %}
+
+{% block content %}
+<h2 class="mb-4">📚 Statistics Concepts</h2>
+
+<!-- Level filter badges -->
+<div class="mb-4">
+  <span class="me-2 text-muted">Filter:</span>
+  <a href="{% url 'concepts_list' %}" class="badge bg-dark text-decoration-none me-1">All</a>
+  <a href="?level=beginner"     class="badge bg-success text-decoration-none me-1">Beginner</a>
+  <a href="?level=intermediate" class="badge bg-warning text-decoration-none text-dark me-1">Intermediate</a>
+  <a href="?level=advanced"     class="badge bg-danger text-decoration-none me-1">Advanced</a>
+</div>
+
+<div class="row g-4">
+  {% for concept in concepts %}
+  <div class="col-md-6">
+    <div class="card p-4 h-100">
+      <div class="d-flex justify-content-between align-items-start">
+        <h5 class="card-title">{{ concept.title }}</h5>
+        <!-- Badge colour based on level -->
+        {% if concept.level == 'beginner' %}
+          <span class="badge bg-success">Beginner</span>
+        {% elif concept.level == 'intermediate' %}
+          <span class="badge bg-warning text-dark">Intermediate</span>
+        {% else %}
+          <span class="badge bg-danger">Advanced</span>
+        {% endif %}
+      </div>
+      <p class="text-muted mt-2">{{ concept.short_description|truncatewords:20 }}</p>
+      <a href="{% url 'concept_detail' concept.slug %}" class="btn btn-sm btn-outline-dark mt-auto">
+        Read More →
+      </a>
+    </div>
+  </div>
+  {% empty %}
+    <p class="text-muted">No concepts found. <a href="/admin/">Add some in the admin panel.</a></p>
+  {% endfor %}
+</div>
+{% endblock %}

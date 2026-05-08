@@ -1,0 +1,31 @@
+{% extends "core/base.html" %}
+
+{% block title %}StatsHelper — Home{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-lg-8 text-center py-5">
+    <h1 class="display-4 fw-bold">Welcome to StatsHelper 📊</h1>
+    <p class="lead text-muted mt-3">
+      Your companion for learning statistics concepts and getting instant AI-powered answers.
+    </p>
+    <hr class="my-4">
+    <div class="row g-4 mt-2">
+      <div class="col-md-6">
+        <div class="card p-4 h-100">
+          <h4>📚 Browse Concepts</h4>
+          <p class="text-muted">Explore beginner to advanced statistics topics explained clearly.</p>
+          <a href="{% url 'concepts_list' %}" class="btn btn-dark mt-auto">Browse Now</a>
+        </div>
+      </div>
+      <div class="col-md-6">
+        <div class="card p-4 h-100">
+          <h4>🤖 Ask a Question</h4>
+          <p class="text-muted">Type any statistics question and get an AI-powered explanation.</p>
+          <a href="{% url 'ask' %}" class="btn btn-outline-dark mt-auto">Ask Now</a>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,167 @@
+{% extends "core/base.html" %}
+{% block title %}Ask a Question — StatsHelper{% endblock %}
+
+{% block content %}
+<div class="row g-4">
+
+  <!-- LEFT: Form + Answer (col-8) -->
+  <div class="col-lg-8">
+    <h2 class="mb-4">🤖 Ask a Statistics Question</h2>
+
+    <!-- Form card -->
+    <div class="card p-4 mb-4">
+      <form method="POST">
+        {% csrf_token %}
+        <div class="mb-3">
+          <label class="form-label fw-semibold">What would you like to know?</label>
+          {{ form.question }}
+          {% if form.question.errors %}
+            <div class="text-danger mt-1">
+              {% for error in form.question.errors %}<small>{{ error }}</small>{% endfor %}
+            </div>
+          {% endif %}
+        </div>
+        <button type="submit" class="btn btn-dark">Get Answer →</button>
+      </form>
+    </div>
+
+    <!-- System error -->
+    {% if error %}
+    <div class="alert alert-danger">⚠️ {{ error }}</div>
+    {% endif %}
+
+    {% if answer %}
+      {% if not answer.success %}
+      <!-- OUT OF SCOPE -->
+      <div class="card p-4 border-start border-4 border-warning">
+        <h5 class="text-warning mb-3">⚠️ Outside My Knowledge Base</h5>
+        <p style="white-space: pre-line;">{{ answer.out_of_scope_message }}</p>
+        {% if answer.closest_concept %}
+          <div class="mt-2 p-2 bg-light rounded">
+            💡 Closest topic: <strong>{{ answer.closest_concept }}</strong>
+          </div>
+        {% endif %}
+      </div>
+
+      {% else %}
+      <!-- IN SCOPE -->
+      <div class="card p-4 mb-3 border-start border-4 border-success">
+        <div class="d-flex justify-content-between align-items-start flex-wrap gap-2">
+          <div>
+            <h4 class="mb-1">✅ {{ answer.concept }}</h4>
+            <span class="text-muted">{{ answer.category }}</span>
+          </div>
+          <div class="text-end">
+            <span class="badge bg-success fs-6">{{ answer.confidence }}% match</span><br>
+            <small class="text-muted">{{ answer.query_case }} query</small>
+          </div>
+        </div>
+        {% if answer.fallback_note %}
+          <div class="alert alert-warning mt-2 mb-0 py-1">
+            <small>⚠️ {{ answer.fallback_note }}</small>
+          </div>
+        {% endif %}
+      </div>
+
+      {% if answer.intuition %}
+      <div class="card p-4 mb-3">
+        <h6 class="text-muted text-uppercase mb-2">💡 Intuition</h6>
+        <p class="mb-0">{{ answer.intuition }}</p>
+      </div>
+      {% endif %}
+
+      {% if answer.formula %}
+      <div class="card p-4 mb-3">
+        <h6 class="text-muted text-uppercase mb-2">🔢 Formula</h6>
+        <code class="d-block p-2 bg-light rounded mb-2">{{ answer.formula }}</code>
+        {% if answer.formula_legend %}
+          <ul class="mb-0">
+            {% for var, desc in answer.formula_legend.items %}
+              <li><strong>{{ var }}</strong>: {{ desc }}</li>
+            {% endfor %}
+          </ul>
+        {% endif %}
+      </div>
+      {% endif %}
+
+      {% if answer.real_world_example %}
+      <div class="card p-4 mb-3">
+        <h6 class="text-muted text-uppercase mb-2">🌍 Real World Example</h6>
+        <p class="mb-0">{{ answer.real_world_example }}</p>
+      </div>
+      {% endif %}
+
+      {% if answer.assumptions %}
+      <div class="card p-4 mb-3">
+        <h6 class="text-muted text-uppercase mb-2">📋 Assumptions to Check</h6>
+        <ol class="mb-0">{% for a in answer.assumptions %}<li>{{ a }}</li>{% endfor %}</ol>
+      </div>
+      {% endif %}
+
+      {% if answer.example_scenario %}
+      <div class="card p-4 mb-3">
+        <h6 class="text-muted text-uppercase mb-2">🧮 Mini Example</h6>
+        <p><strong>Scenario:</strong> {{ answer.example_scenario }}</p>
+        {% if answer.code %}
+          <pre class="bg-dark text-light p-3 rounded"><code>{{ answer.code }}</code></pre>
+        {% endif %}
+        {% if answer.interpretation %}
+          <p class="mb-0"><strong>Interpretation:</strong> {{ answer.interpretation }}</p>
+        {% endif %}
+      </div>
+      {% endif %}
+
+      {% if answer.common_mistakes %}
+      <div class="card p-4 mb-3">
+        <h6 class="text-muted text-uppercase mb-2">⚠️ Common Mistakes</h6>
+        <ul class="mb-0">{% for m in answer.common_mistakes %}<li>{{ m }}</li>{% endfor %}</ul>
+      </div>
+      {% endif %}
+
+      {% if answer.effect_size %}
+      <div class="card p-4 mb-3">
+        <h6 class="text-muted text-uppercase mb-2">📏 Effect Size</h6>
+        <p class="mb-0">{{ answer.effect_size }}</p>
+      </div>
+      {% endif %}
+
+      {% endif %}{% endif %}
+  </div>
+
+  <!-- RIGHT: History sidebar (col-4) -->
+  <div class="col-lg-4">
+    <div class="card p-3">
+      <div class="d-flex justify-content-between align-items-center mb-3">
+        <h6 class="mb-0">🕘 Recent Questions</h6>
+        {% if history %}
+        <form method="POST" action="{% url 'clear_history' %}">
+          {% csrf_token %}
+          <button type="submit" class="btn btn-sm btn-outline-danger">Clear</button>
+        </form>
+        {% endif %}
+      </div>
+
+      {% if history %}
+        {% for item in history %}
+        <div class="mb-3 pb-3 {% if not forloop.last %}border-bottom{% endif %}">
+          <p class="mb-1 fw-semibold small">
+            {% if item.success %}✅{% else %}⚠️{% endif %}
+            {{ item.question|truncatewords:10 }}
+          </p>
+          {% if item.concept %}
+            <span class="badge bg-secondary mb-1">{{ item.concept }}</span>
+          {% endif %}
+          <p class="text-muted small mb-0">{{ item.summary|truncatewords:15 }}</p>
+        </div>
+        {% endfor %}
+        <a href="{% url 'recent_questions' %}" class="btn btn-sm btn-outline-dark w-100 mt-2">
+          View All →
+        </a>
+      {% else %}
+        <p class="text-muted small">No questions asked yet in this session.</p>
+      {% endif %}
+    </div>
+  </div>
+
+</div>
+{% endblock %}
